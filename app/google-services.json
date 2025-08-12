@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "849232115000",
+    "project_id": "colfi-2403",
+    "storage_bucket": "colfi-2403.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:849232115000:android:6531179171c4d81eccfdcd",
+        "android_client_info": {
+          "package_name": "com.example.colfi"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "849232115000-s59ribs8sqh9marqs68floft50nftvvi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAN1C3UjuiVe-tm0WI18YyeoZAlA_GfCFY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "849232115000-s59ribs8sqh9marqs68floft50nftvvi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
