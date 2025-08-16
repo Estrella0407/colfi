@@ -55,17 +55,18 @@ fun CustomerHomeScreen(
                 .asPaddingValues()
                 .calculateBottomPadding()
 
+            val bottomNavHeight = 64.dp
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
                     .padding(16.dp)
-                    .padding(bottom = navBarHeight + 56.dp),
+                    .padding(bottom = navBarHeight + bottomNavHeight), // dynamic bottom space
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 ColfiHeader(randomQuote = uiState.randomQuote)
-                Spacer(modifier = Modifier.height(32
-                    .dp))
+                Spacer(modifier = Modifier.height(32.dp))
                 OrderOptions()
                 Spacer(modifier = Modifier.height(24.dp))
                 uiState.user?.let { user ->
@@ -76,21 +77,22 @@ fun CustomerHomeScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            Box(
+            BottomNavigation(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-            ) {
-                BottomNavigation(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding(),
-                    onMenuClick = onNavigateToMenu,
-                    onOrdersClick = onNavigateToOrders)
-            }
+                    .navigationBarsPadding(),
+                onMenuClick = onNavigateToMenu,
+                onOrdersClick = onNavigateToOrders,
+                onHomeClick = { /* Already on Home */ },
+                isHomeSelected = true,
+                isOrdersSelected = false
+            )
+
         }
     }
 }
+
 
 @Composable
 fun ColfiHeader(randomQuote: String, modifier: Modifier = Modifier) {
@@ -330,7 +332,11 @@ fun CafeInfoParagraphs(title: String, subtitle: String, modifier: Modifier = Mod
 fun BottomNavigation(
     modifier: Modifier = Modifier,
     onMenuClick: () -> Unit = {},
-    onOrdersClick: () -> Unit = {}
+    onOrdersClick: () -> Unit = {},
+    onHomeClick: () -> Unit = {},
+    isHomeSelected: Boolean = false,
+    isOrdersSelected: Boolean = false,
+    isMenuSelected: Boolean = false
 ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -346,10 +352,30 @@ fun BottomNavigation(
                 .padding(vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            BottomNavItem(R.drawable.paperbag, "Home", true) { /* Already on home */ }
-            BottomNavItem(R.drawable.paperbag, "Menu", false, onClick = onMenuClick)
-            BottomNavItem(R.drawable.paperbag, "Orders", false, onClick = onOrdersClick)
-            BottomNavItem(R.drawable.paperbag, "Me", false) { /* Handle profile navigation */ }
+            BottomNavItem(
+                iconRes = R.drawable.paperbag, // Replace with actual home icon resource
+                label = "Home",
+                isSelected = isHomeSelected,
+                onClick = onHomeClick
+            )
+            BottomNavItem(
+                iconRes = R.drawable.paperbag, // Replace with actual menu icon resource
+                label = "Menu",
+                isSelected = false,
+                onClick = onMenuClick
+            )
+            BottomNavItem(
+                iconRes = R.drawable.paperbag, // Replace with actual orders icon resource
+                label = "Orders",
+                isSelected = isOrdersSelected,
+                onClick = onOrdersClick
+            )
+            BottomNavItem(
+                iconRes = R.drawable.paperbag, // Replace with actual profile icon resource
+                label = "Me",
+                isSelected = false,
+                onClick = { /* Handle profile navigation */ }
+            )
         }
     }
 }
@@ -359,23 +385,25 @@ fun BottomNavItem(
     iconRes: Int,
     label: String,
     isSelected: Boolean,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(8.dp)
     ) {
         Icon(
             painter = painterResource(id = iconRes),
             contentDescription = label,
-            modifier = Modifier.size(48.dp),
-            tint = if (isSelected) LightBrown1 else DarkBrown1
+            tint = if (isSelected) DarkBrown1 else Color.Gray,
+            modifier = Modifier.size(24.dp)
         )
         Text(
             text = label,
-            fontFamily = colfiFont,
             fontSize = 12.sp,
-            color = if (isSelected) LightBrown1 else DarkBrown1
+            color = if (isSelected) DarkBrown1 else Color.Gray
         )
     }
 }
+

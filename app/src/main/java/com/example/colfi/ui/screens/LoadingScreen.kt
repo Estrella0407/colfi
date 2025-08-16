@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.R
+import com.example.colfi.ui.theme.BackgroundColor
 import com.example.colfi.ui.theme.DarkBrown1
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
@@ -43,7 +44,7 @@ fun LoadingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(LightCream1),
+            .background(BackgroundColor),
         contentAlignment = Alignment.Center
     ) {
         Column(

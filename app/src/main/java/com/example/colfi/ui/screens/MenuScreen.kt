@@ -23,149 +23,151 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.colfi.data.model.MenuItem
 import com.example.colfi.ui.theme.LightBrown2
+import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.MenuViewModel
 
 @Composable
 fun MenuScreen(
-    onNavigateBack: () -> Unit,
+    userName: String,
+    onNavigateToHome: () -> Unit,
+    onNavigateToOrders: () -> Unit,
     viewModel: MenuViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .background(Color(0xFFF5F5F5))
+            .navigationBarsPadding() // Ensure navigation bar padding is applied
+            .background(LightCream1)
     ) {
-        MenuHeader(onBackPressed = onNavigateBack)
-
-        Row(
-            modifier = Modifier.fillMaxSize()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 56.dp) // Adjust for bottom navigation height
         ) {
-            // Left side - Categories
-            Column(
-                modifier = Modifier
-                    .width(120.dp)
-                    .fillMaxHeight()
-                    .background(Color.White)
-                    .padding(vertical = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                uiState.categories.forEach { category ->
-                    MenuCategory(
-                        category = viewModel.getCategoryDisplayName(category),
-                        categoryName = category,
-                        isSelected = uiState.selectedCategory == category,
-                        onCategorySelected = { viewModel.selectCategory(it) }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-            }
+            MenuHeader()
 
-            // Vertical divider
-            VerticalDivider(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(1.dp),
-                color = Color.Gray.copy(alpha = 0.3f)
-            )
-
-            // Right side - Menu items
-            Box(
+            Row(
                 modifier = Modifier.fillMaxSize()
             ) {
-                when {
-                    uiState.isLoading -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center),
-                            color = Color(0xFFD2B48C)
+                // Left side - Categories
+                Column(
+                    modifier = Modifier
+                        .width(120.dp)
+                        .fillMaxHeight()
+                        .background(Color.White)
+                        .padding(vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    uiState.categories.forEach { category ->
+                        MenuCategory(
+                            category = viewModel.getCategoryDisplayName(category),
+                            categoryName = category,
+                            isSelected = uiState.selectedCategory == category,
+                            onCategorySelected = { viewModel.selectCategory(it) }
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
-                    uiState.errorMessage.isNotEmpty() -> {
-                        Column(
-                            modifier = Modifier.align(Alignment.Center),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Error loading menu",
-                                fontFamily = colfiFont,
-                                color = Color.Red,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = uiState.errorMessage,
-                                fontFamily = colfiFont,
-                                color = Color.Gray,
-                                fontSize = 12.sp
+                }
+
+                // Vertical divider
+                VerticalDivider(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(1.dp),
+                    color = Color.Gray.copy(alpha = 0.3f)
+                )
+
+                // Right side - Menu items
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    when {
+                        uiState.isLoading -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.Center),
+                                color = Color(0xFFD2B48C)
                             )
                         }
-                    }
-                    uiState.menuItems.isEmpty() -> {
-                        Text(
-                            text = "No items available in this category",
-                            modifier = Modifier.align(Alignment.Center),
-                            fontFamily = colfiFont,
-                            color = Color.Gray
-                        )
-                    }
-                    else -> {
-                        MenuItemsList(
-                            menuItems = uiState.menuItems,
-                            onItemClick = { item ->
-                                // Handle item click - you can add navigation to item detail here
-                                println("Clicked on: ${item.name}")
+
+                        uiState.errorMessage.isNotEmpty() -> {
+                            Column(
+                                modifier = Modifier.align(Alignment.Center),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Error loading menu",
+                                    fontFamily = colfiFont,
+                                    color = Color.Red,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = uiState.errorMessage,
+                                    fontFamily = colfiFont,
+                                    color = Color.Gray,
+                                    fontSize = 12.sp
+                                )
                             }
-                        )
+                        }
+
+                        uiState.menuItems.isEmpty() -> {
+                            Text(
+                                text = "No items available in this category",
+                                modifier = Modifier.align(Alignment.Center),
+                                fontFamily = colfiFont,
+                                color = Color.Gray
+                            )
+                        }
+
+                        else -> {
+                            MenuItemsList(
+                                menuItems = uiState.menuItems,
+                                onItemClick = { item ->
+                                    // Handle item click - you can add navigation to item detail here
+                                    println("Clicked on: ${item.name}")
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
+
+        // Bottom Navigation Bar
+        BottomNavigation(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .navigationBarsPadding(),
+            onMenuClick = { /* Already on menu */ },
+            onOrdersClick = onNavigateToOrders,
+            onHomeClick = onNavigateToHome,
+            isHomeSelected = false,
+            isOrdersSelected = false,
+            isMenuSelected = true
+        )
     }
 }
 
 @Composable
-fun MenuHeader(onBackPressed: () -> Unit) {
+fun MenuHeader() {
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start,
+            horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color.White)
-                .padding(16.dp)
         ) {
-            IconButton(onClick = onBackPressed) {
-                Icon(
-                    imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.Black
-                )
-            }
-
-            // Left padding
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Text(
-                text = "— COLFi —",
-                fontFamily = colfiFont,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-        }
-
-        // Menu button
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
+            // Menu button on the left
             Button(
                 onClick = { /* Already on menu */ },
-                modifier = Modifier.width(80.dp),
+                modifier = Modifier
+                    .padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
+                    .width(80.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = LightBrown2
                 ),
@@ -178,6 +180,16 @@ fun MenuHeader(onBackPressed: () -> Unit) {
                     color = Color.Black
                 )
             }
+
+            // COLFi text on the right
+            Text(
+                text = "— COLFi —",
+                modifier = Modifier.padding(end = 16.dp),
+                fontFamily = colfiFont,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
         }
 
         // Add a divider after header

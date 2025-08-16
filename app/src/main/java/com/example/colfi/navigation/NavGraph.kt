@@ -1,4 +1,3 @@
-// NavGraph.kt
 package com.example.colfi.navigation
 
 import androidx.compose.runtime.Composable
@@ -6,6 +5,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.colfi.ui.screens.*
 import com.example.colfi.ui.viewmodel.*
 
@@ -39,36 +40,69 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        composable(Screen.CustomerHome.route) { backStackEntry ->
+        composable(
+            route = Screen.CustomerHome.route,
+            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+        ) { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
             val viewModel: HomeViewModel = viewModel()
             CustomerHomeScreen(
                 userName = userName,
                 onNavigateToMenu = {
-                    navController.navigate(Screen.Menu.route)
+                    navController.navigate(Screen.Menu.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
                 },
                 onNavigateToOrders = {
-                    navController.navigate(Screen.Orders.route)
+                    navController.navigate(Screen.Orders.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
                 },
                 viewModel = viewModel
             )
         }
 
-        composable(Screen.Menu.route) {
+        composable(
+            route = Screen.Menu.route,
+            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
             val viewModel: MenuViewModel = viewModel()
             MenuScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
+                userName = userName,
+                onNavigateToHome = {
+                    navController.navigate(Screen.CustomerHome.createRoute(userName)) {
+                        popUpTo(Screen.Menu.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToOrders = {
+                    navController.navigate(Screen.Orders.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
                 },
                 viewModel = viewModel
             )
         }
 
-        composable(Screen.Orders.route) {
+        composable(
+            route = Screen.Orders.route,
+            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
             val viewModel: OrdersViewModel = viewModel()
             OrdersScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
+                userName = userName,
+                onNavigateToMenu = {
+                    navController.navigate(Screen.Menu.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToHome = {
+                    navController.navigate(Screen.CustomerHome.createRoute(userName)) {
+                        popUpTo(Screen.Orders.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 },
                 viewModel = viewModel
             )

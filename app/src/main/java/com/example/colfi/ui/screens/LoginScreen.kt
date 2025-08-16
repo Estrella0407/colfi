@@ -18,8 +18,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.colfi.ui.theme.DarkBrown1
-import com.example.colfi.ui.theme.LightBrown1
+import com.example.colfi.ui.theme.*
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.LoginViewModel
 
@@ -106,7 +105,7 @@ fun LoginScreen(
             enabled = !uiState.isLoading && uiState.username.isNotEmpty() && uiState.password.isNotEmpty()
         ) {
             if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = LightCream3)
                 Spacer(modifier = Modifier.width(8.dp))
             }
             Text(text = if (uiState.isLoading) "Logging in..." else "Login", fontFamily = colfiFont)

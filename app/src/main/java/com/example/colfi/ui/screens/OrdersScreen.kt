@@ -1,8 +1,6 @@
-// OrdersScreen.kt
 package com.example.colfi.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,20 +14,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.data.model.OrderHistory
 import com.example.colfi.data.model.OrderItem
 import com.example.colfi.ui.theme.LightBrown2
+import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.OrdersViewModel
 
 @Composable
 fun OrdersScreen(
+    userName: String,
     onNavigateToMenu: () -> Unit,
-    onNavigateToOrders: () -> Unit,
+    onNavigateToHome: () -> Unit,
     viewModel: OrdersViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -40,12 +39,12 @@ fun OrdersScreen(
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding() // Ensure navigation bar padding is applied
-            .background(Color(0xFFF5F5DC))
+            .background(LightCream1)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 56.dp)
+                .padding(bottom = 56.dp) // Adjust for bottom navigation height
         ) {
             OrderHeader(selectedTab = selectedTab, onTabSelected = { viewModel.selectTab(it) })
 
@@ -104,11 +103,15 @@ fun OrdersScreen(
                 .fillMaxWidth()
                 .navigationBarsPadding(),
             onMenuClick = onNavigateToMenu,
-            onOrdersClick = onNavigateToOrders
+            onOrdersClick = { /* Already on orders */ },
+            onHomeClick = onNavigateToHome,
+            isHomeSelected = false,
+            isOrdersSelected = true,
+            isMenuSelected = false
         )
+
     }
 }
-
 
 @Composable
 fun OrderHeader(
@@ -122,13 +125,13 @@ fun OrderHeader(
             horizontalArrangement = Arrangement.Start,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFFF5F5DC))
+                .background(LightCream1)
                 .padding(horizontal = 16.dp, vertical = 16.dp)
         ) {
             Text(
-                text = "— COLFi —",
+                text = "Order History",
                 fontFamily = colfiFont,
-                fontSize = 20.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
@@ -136,9 +139,9 @@ fun OrderHeader(
             Spacer(modifier = Modifier.weight(1f))
 
             Text(
-                text = "Order History",
+                text = "— COLFi —",
                 fontFamily = colfiFont,
-                fontSize = 24.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             )

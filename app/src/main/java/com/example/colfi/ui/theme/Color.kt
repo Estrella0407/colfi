@@ -13,3 +13,5 @@ val LightCream2 = Color(0xFFF8F7E9)
 val LightCream1 = Color(0xFFEDE4D1)
 
 val DarkBrown1 = Color(0xFF473F30)
+
+val BackgroundColor = Color(0xFFF8F7E9)
