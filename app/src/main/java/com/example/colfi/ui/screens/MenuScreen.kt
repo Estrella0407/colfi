@@ -32,6 +32,7 @@ fun MenuScreen(
     userName: String,
     onNavigateToHome: () -> Unit,
     onNavigateToOrders: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     viewModel: MenuViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -142,12 +143,14 @@ fun MenuScreen(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .navigationBarsPadding(),
-            onMenuClick = { /* Already on menu */ },
-            onOrdersClick = onNavigateToOrders,
             onHomeClick = onNavigateToHome,
+            onMenuClick = { },
+            onOrdersClick = onNavigateToOrders,
+            onProfileClick = onNavigateToProfile,
             isHomeSelected = false,
+            isMenuSelected = true,
             isOrdersSelected = false,
-            isMenuSelected = true
+            isProfileSelected = false
         )
     }
 }

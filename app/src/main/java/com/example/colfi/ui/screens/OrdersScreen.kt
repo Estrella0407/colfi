@@ -29,6 +29,7 @@ fun OrdersScreen(
     userName: String,
     onNavigateToMenu: () -> Unit,
     onNavigateToHome: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     viewModel: OrdersViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -102,14 +103,15 @@ fun OrdersScreen(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .navigationBarsPadding(),
-            onMenuClick = onNavigateToMenu,
-            onOrdersClick = { /* Already on orders */ },
             onHomeClick = onNavigateToHome,
+            onMenuClick = onNavigateToMenu,
+            onOrdersClick = { },
+            onProfileClick = onNavigateToProfile,
             isHomeSelected = false,
+            isMenuSelected = false,
             isOrdersSelected = true,
-            isMenuSelected = false
+            isProfileSelected = false
         )
-
     }
 }
 

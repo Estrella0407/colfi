@@ -30,6 +30,7 @@ fun CustomerHomeScreen(
     userName: String,
     onNavigateToMenu: () -> Unit,
     onNavigateToOrders: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -82,11 +83,13 @@ fun CustomerHomeScreen(
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .navigationBarsPadding(),
+                onHomeClick = { /* Already on Home */ },
                 onMenuClick = onNavigateToMenu,
                 onOrdersClick = onNavigateToOrders,
-                onHomeClick = { /* Already on Home */ },
+                onProfileClick = onNavigateToProfile,
                 isHomeSelected = true,
-                isOrdersSelected = false
+                isOrdersSelected = false,
+                isProfileSelected = false
             )
 
         }
@@ -334,8 +337,10 @@ fun BottomNavigation(
     onMenuClick: () -> Unit = {},
     onOrdersClick: () -> Unit = {},
     onHomeClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
     isHomeSelected: Boolean = false,
     isOrdersSelected: Boolean = false,
+    isProfileSelected: Boolean = false,
     isMenuSelected: Boolean = false
 ) {
     Card(
@@ -373,8 +378,8 @@ fun BottomNavigation(
             BottomNavItem(
                 iconRes = R.drawable.paperbag, // Replace with actual profile icon resource
                 label = "Me",
-                isSelected = false,
-                onClick = { /* Handle profile navigation */ }
+                isSelected = isProfileSelected,
+                onClick = onProfileClick
             )
         }
     }

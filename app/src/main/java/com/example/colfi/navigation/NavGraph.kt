@@ -1,3 +1,4 @@
+// NavGraph.kt
 package com.example.colfi.navigation
 
 import androidx.compose.runtime.Composable
@@ -21,6 +22,11 @@ fun NavGraph(navController: NavHostController) {
             LoadingScreen(
                 onNavigateToLogin = {
                     navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Loading.route) { inclusive = true }
+                    }
+                },
+                onNavigateToHome = { userName ->
+                    navController.navigate(Screen.CustomerHome.createRoute(userName)) {
                         popUpTo(Screen.Loading.route) { inclusive = true }
                     }
                 },
@@ -58,6 +64,11 @@ fun NavGraph(navController: NavHostController) {
                         launchSingleTop = true
                     }
                 },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.Profile.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                },
                 viewModel = viewModel
             )
         }
@@ -78,6 +89,11 @@ fun NavGraph(navController: NavHostController) {
                 },
                 onNavigateToOrders = {
                     navController.navigate(Screen.Orders.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.Profile.createRoute(userName)) {
                         launchSingleTop = true
                     }
                 },
@@ -102,6 +118,44 @@ fun NavGraph(navController: NavHostController) {
                     navController.navigate(Screen.CustomerHome.createRoute(userName)) {
                         popUpTo(Screen.Orders.route) { inclusive = true }
                         launchSingleTop = true
+                    }
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.Profile.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                },
+                viewModel = viewModel
+            )
+        }
+
+        composable(
+            route = Screen.Profile.route,
+            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
+            val viewModel: ProfileViewModel = viewModel()
+            ProfileScreen(
+                userName = userName,
+                onNavigateToHome = {
+                    navController.navigate(Screen.CustomerHome.createRoute(userName)) {
+                        popUpTo(Screen.Orders.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToMenu = {
+                    navController.navigate(Screen.Menu.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToOrders = {
+                    navController.navigate(Screen.Orders.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.CustomerHome.route) { inclusive = true }
                     }
                 },
                 viewModel = viewModel

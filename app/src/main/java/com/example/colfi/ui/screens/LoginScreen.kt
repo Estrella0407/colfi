@@ -53,13 +53,14 @@ fun LoginScreen(
         )
         Spacer(modifier = Modifier.height(48.dp))
 
+        // Changed from Username to Email for Firebase
         OutlinedTextField(
             value = uiState.username,
             onValueChange = viewModel::updateUsername,
-            label = { Text("Username", color = DarkBrown1) },
+            label = { Text("Email", color = DarkBrown1) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), // Changed to Email
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = LightBrown1,
                 unfocusedBorderColor = DarkBrown1
@@ -121,6 +122,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        // Updated demo credentials card for Firebase
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
@@ -137,19 +139,65 @@ fun LoginScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Username: admin | Password: 123456",
+                    text = "Email: admin@colfi.com | Password: 123456",
                     fontFamily = colfiFont,
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
                 Text(
-                    text = "Username: jenny | Password: password",
+                    text = "Email: jenny@colfi.com | Password: 123456",
                     fontFamily = colfiFont,
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Quick login buttons for demo
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    OutlinedButton(
+                        onClick = { viewModel.loginWithDemo("admin", onNavigateToHome) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "Admin",
+                            fontFamily = colfiFont,
+                            fontSize = 10.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedButton(
+                        onClick = { viewModel.loginWithDemo("jenny", onNavigateToHome) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "Jenny",
+                            fontFamily = colfiFont,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Add registration hint
+        TextButton(
+            onClick = {
+                // TODO: Implement registration screen navigation
+                // For now, show a message
+            }
+        ) {
+            Text(
+                text = "Don't have an account? Contact admin",
+                fontFamily = colfiFont,
+                fontSize = 12.sp,
+                color = Color.Gray
+            )
         }
     }
 }
-

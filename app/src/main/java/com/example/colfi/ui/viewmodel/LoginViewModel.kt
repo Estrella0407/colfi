@@ -17,9 +17,10 @@ class LoginViewModel(
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
-    fun updateUsername(username: String) {
+    // Update to handle email instead of username for Firebase
+    fun updateUsername(email: String) {
         _uiState.value = _uiState.value.copy(
-            username = username,
+            username = email, // This will now store the email
             errorMessage = ""
         )
     }
@@ -44,21 +45,28 @@ class LoginViewModel(
             return
         }
 
+        // Basic email validation
+        if (!isValidEmail(currentState.username)) {
+            _uiState.value = currentState.copy(errorMessage = "Please enter a valid email address")
+            return
+        }
+
         _uiState.value = currentState.copy(isLoading = true, errorMessage = "")
 
         viewModelScope.launch {
+            // Use email and password for Firebase authentication
             authRepository.login(currentState.username, currentState.password)
                 .onSuccess { user ->
                     _uiState.value = currentState.copy(
                         isLoading = false,
                         isLoginSuccessful = true
                     )
-                    onSuccess(user.displayName)
+                    onSuccess(user.username) // Pass username for navigation
                 }
                 .onFailure { exception ->
                     _uiState.value = currentState.copy(
                         isLoading = false,
-                        errorMessage = exception.message ?: "Login failed"
+                        errorMessage = getFirebaseErrorMessage(exception.message)
                     )
                 }
         }
@@ -67,5 +75,32 @@ class LoginViewModel(
     fun loginAsGuest(onSuccess: (String) -> Unit) {
         val guestUser = authRepository.getGuestUser()
         onSuccess(guestUser.displayName)
+    }
+
+    // For demo purposes - create demo accounts in Firebase
+    fun loginWithDemo(username: String, onSuccess: (String) -> Unit) {
+        val demoCredentials = mapOf(
+            "admin" to "admin@colfi.com",
+            "jenny" to "jenny@colfi.com"
+        )
+
+        val email = demoCredentials[username]
+        if (email != null) {
+            _uiState.value = _uiState.value.copy(username = email, password = "123456")
+            login(onSuccess)
+        }
+    }
+
+    private fun isValidEmail(email: String): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    private fun getFirebaseErrorMessage(error: String?): String {
+        return when {
+            error?.contains("password") == true -> "Invalid email or password"
+            error?.contains("network") == true -> "Network error. Please check your connection"
+            error?.contains("user") == true -> "No account found with this email"
+            else -> error ?: "Login failed. Please try again"
+        }
     }
 }
