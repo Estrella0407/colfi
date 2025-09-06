@@ -1,4 +1,3 @@
-// MenuScreen.kt
 package com.example.colfi.ui.screens
 
 import androidx.compose.foundation.background
@@ -7,8 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,13 +23,17 @@ import com.example.colfi.ui.theme.LightBrown2
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.MenuViewModel
+import com.example.colfi.ui.viewmodel.CartViewModel
 
 @Composable
 fun MenuScreen(
     userName: String,
     onNavigateToHome: () -> Unit,
     onNavigateToOrders: () -> Unit,
-    viewModel: MenuViewModel = viewModel()
+    onNavigateToCart: () -> Unit,
+    onNavigateToItemDetail: (String) -> Unit, // pass menuItem.id
+    viewModel: MenuViewModel = viewModel(),
+    cartViewModel: CartViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -40,13 +41,13 @@ fun MenuScreen(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .navigationBarsPadding() // Ensure navigation bar padding is applied
+            .navigationBarsPadding()
             .background(LightCream1)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 56.dp) // Adjust for bottom navigation height
+                .padding(bottom = 56.dp) // space for bottom bar
         ) {
             MenuHeader()
 
@@ -56,7 +57,7 @@ fun MenuScreen(
                 // Left side - Categories
                 Column(
                     modifier = Modifier
-                        .width(120.dp)
+                        .width(100.dp)
                         .fillMaxHeight()
                         .background(Color.White)
                         .padding(vertical = 16.dp),
@@ -73,7 +74,7 @@ fun MenuScreen(
                     }
                 }
 
-                // Vertical divider
+                // Divider
                 VerticalDivider(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -126,8 +127,8 @@ fun MenuScreen(
                             MenuItemsList(
                                 menuItems = uiState.menuItems,
                                 onItemClick = { item ->
-                                    // Handle item click - you can add navigation to item detail here
-                                    println("Clicked on: ${item.name}")
+                                    // Navigate to detail screen with this item
+                                    onNavigateToItemDetail(item.id)
                                 }
                             )
                         }
@@ -136,7 +137,7 @@ fun MenuScreen(
             }
         }
 
-        // Bottom Navigation Bar
+        // Bottom Navigation
         BottomNavigation(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -162,15 +163,12 @@ fun MenuHeader() {
                 .fillMaxWidth()
                 .background(Color.White)
         ) {
-            // Menu button on the left
             Button(
                 onClick = { /* Already on menu */ },
                 modifier = Modifier
                     .padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
                     .width(80.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = LightBrown2
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = LightBrown2),
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
@@ -181,7 +179,6 @@ fun MenuHeader() {
                 )
             }
 
-            // COLFi text on the right
             Text(
                 text = "— COLFi —",
                 modifier = Modifier.padding(end = 16.dp),
@@ -192,7 +189,6 @@ fun MenuHeader() {
             )
         }
 
-        // Add a divider after header
         HorizontalDivider(
             color = Color.Gray.copy(alpha = 0.3f),
             thickness = 1.dp
@@ -245,10 +241,7 @@ fun MenuItemsList(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(menuItems) { item ->
-            MenuItemCard(
-                menuItem = item,
-                onItemClick = onItemClick
-            )
+            MenuItemCard(menuItem = item, onItemClick = onItemClick)
         }
     }
 }
@@ -273,7 +266,6 @@ fun MenuItemCard(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Image
             AsyncImage(
                 model = if (menuItem.imageURL.isNotEmpty()) menuItem.imageURL else "https://via.placeholder.com/100x100?text=No+Image",
                 contentDescription = menuItem.name,
@@ -283,7 +275,6 @@ fun MenuItemCard(
                 contentScale = ContentScale.Crop
             )
 
-            // Content
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -326,12 +317,9 @@ fun MenuItemCard(
                         color = Color(0xFFD2B48C)
                     )
 
-                    // Add to cart button (optional)
                     Button(
                         onClick = { onItemClick(menuItem) },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFD2B48C)
-                        ),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD2B48C)),
                         shape = RoundedCornerShape(6.dp),
                         modifier = Modifier.height(32.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)

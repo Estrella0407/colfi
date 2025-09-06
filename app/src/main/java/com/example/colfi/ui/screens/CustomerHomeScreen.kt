@@ -397,11 +397,11 @@ fun BottomNavItem(
             painter = painterResource(id = iconRes),
             contentDescription = label,
             tint = if (isSelected) DarkBrown1 else Color.Gray,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(32.dp)
         )
         Text(
             text = label,
-            fontSize = 12.sp,
+            modifier = Modifier.padding(top = 2.dp),
             color = if (isSelected) DarkBrown1 else Color.Gray
         )
     }

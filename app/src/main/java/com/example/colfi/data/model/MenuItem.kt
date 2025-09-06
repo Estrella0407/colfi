@@ -10,3 +10,4 @@ data class MenuItem(
     val categoryID: String = "",
     val availability: Boolean = true
 )
+

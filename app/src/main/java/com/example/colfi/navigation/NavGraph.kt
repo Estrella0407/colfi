@@ -16,6 +16,7 @@ fun NavGraph(navController: NavHostController) {
         navController = navController,
         startDestination = Screen.Loading.route
     ) {
+        // 🔹 Loading
         composable(Screen.Loading.route) {
             val viewModel: LoadingViewModel = viewModel()
             LoadingScreen(
@@ -28,6 +29,7 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
+        // 🔹 Login
         composable(Screen.Login.route) {
             val viewModel: LoginViewModel = viewModel()
             LoginScreen(
@@ -40,6 +42,7 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
+        // 🔹 Customer Home
         composable(
             route = Screen.CustomerHome.route,
             arguments = listOf(navArgument("user_name") { type = NavType.StringType })
@@ -62,17 +65,20 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
+        // 🔹 Menu
         composable(
             route = Screen.Menu.route,
             arguments = listOf(navArgument("user_name") { type = NavType.StringType })
         ) { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
             val viewModel: MenuViewModel = viewModel()
+            val cartViewModel: CartViewModel = viewModel()
+
             MenuScreen(
                 userName = userName,
                 onNavigateToHome = {
                     navController.navigate(Screen.CustomerHome.createRoute(userName)) {
-                        popUpTo(Screen.Menu.route) { inclusive = true }
+                        popUpTo(Screen.CustomerHome.route) { inclusive = false }
                         launchSingleTop = true
                     }
                 },
@@ -81,10 +87,20 @@ fun NavGraph(navController: NavHostController) {
                         launchSingleTop = true
                     }
                 },
-                viewModel = viewModel
+                onNavigateToCart = {
+                    navController.navigate(Screen.Cart.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToItemDetail = { itemId ->
+                    navController.navigate(Screen.ItemDetail.createRoute(itemId))
+                },
+                viewModel = viewModel,
+                cartViewModel = cartViewModel
             )
         }
 
+        // 🔹 Orders
         composable(
             route = Screen.Orders.route,
             arguments = listOf(navArgument("user_name") { type = NavType.StringType })
@@ -100,11 +116,42 @@ fun NavGraph(navController: NavHostController) {
                 },
                 onNavigateToHome = {
                     navController.navigate(Screen.CustomerHome.createRoute(userName)) {
-                        popUpTo(Screen.Orders.route) { inclusive = true }
+                        popUpTo(Screen.CustomerHome.route) { inclusive = false }
                         launchSingleTop = true
                     }
                 },
                 viewModel = viewModel
+            )
+        }
+
+        // 🔹 Cart
+        composable(
+            route = Screen.Cart.route,
+            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
+            val cartViewModel: CartViewModel = viewModel()
+            CartScreen(
+                userName = userName,
+                onBack = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate(Screen.CustomerHome.createRoute(userName)) {
+                            launchSingleTop = true
+                        }
+                    }
+                },
+                onNavigateToMenu = {
+                    navController.navigate(Screen.Menu.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToHome = {
+                    navController.navigate(Screen.CustomerHome.createRoute(userName)) {
+                        popUpTo(Screen.CustomerHome.route) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+                viewModel = cartViewModel
             )
         }
     }
