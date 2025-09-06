@@ -26,6 +26,7 @@ import com.example.colfi.ui.theme.LightBrown2
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.MenuViewModel
+import com.example.colfi.ui.viewmodel.CartViewModel
 
 @Composable
 fun MenuScreen(
@@ -34,6 +35,10 @@ fun MenuScreen(
     onNavigateToOrders: () -> Unit,
     onNavigateToProfile: () -> Unit,
     viewModel: MenuViewModel = viewModel()
+    onNavigateToCart: () -> Unit,
+    onNavigateToItemDetail: (String) -> Unit, // pass menuItem.id
+    viewModel: MenuViewModel = viewModel(),
+    cartViewModel: CartViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -143,6 +148,8 @@ fun MenuScreen(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .navigationBarsPadding(),
+            onMenuClick = { /* Already on menu */ },
+            onOrdersClick = onNavigateToOrders,
             onHomeClick = onNavigateToHome,
             onMenuClick = { },
             onOrdersClick = onNavigateToOrders,
@@ -150,7 +157,7 @@ fun MenuScreen(
             isHomeSelected = false,
             isMenuSelected = true,
             isOrdersSelected = false,
-            isProfileSelected = false
+            isMenuSelected = true
         )
     }
 }

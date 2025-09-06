@@ -115,7 +115,7 @@ fun ColfiHeader(randomQuote: String, modifier: Modifier = Modifier) {
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.character1),
+                painter = painterResource(id = R.drawable.barista),
                 contentDescription = "COLFi Barista Character",
                 modifier = Modifier.fillMaxSize(),
                 tint = Color.Unspecified
@@ -156,9 +156,9 @@ fun OrderOptions(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        OrderOptionCard(R.drawable.dineinimage, "Dine In") { /* Handle dine in */ }
-        OrderOptionCard(R.drawable.pickupimage, "Pick Up") { /* Handle pick up */ }
-        OrderOptionCard(R.drawable.deliveryimage, "Delivery") { /* Handle delivery */ }
+        OrderOptionCard(R.drawable.dine_in, "Dine In") { /* Handle dine in */ }
+        OrderOptionCard(R.drawable.pick_up, "Pick Up") { /* Handle pick up */ }
+        OrderOptionCard(R.drawable.delivery, "Delivery") { /* Handle delivery */ }
     }
 }
 
@@ -358,25 +358,25 @@ fun BottomNavigation(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             BottomNavItem(
-                iconRes = R.drawable.paperbag, // Replace with actual home icon resource
+                iconRes = R.drawable.homepage_icon, // Replace with actual home icon resource
                 label = "Home",
                 isSelected = isHomeSelected,
                 onClick = onHomeClick
             )
             BottomNavItem(
-                iconRes = R.drawable.paperbag, // Replace with actual menu icon resource
+                iconRes = R.drawable.menu, // Replace with actual menu icon resource
                 label = "Menu",
                 isSelected = false,
                 onClick = onMenuClick
             )
             BottomNavItem(
-                iconRes = R.drawable.paperbag, // Replace with actual orders icon resource
+                iconRes = R.drawable.order_history, // Replace with actual orders icon resource
                 label = "Orders",
                 isSelected = isOrdersSelected,
                 onClick = onOrdersClick
             )
             BottomNavItem(
-                iconRes = R.drawable.paperbag, // Replace with actual profile icon resource
+                iconRes = R.drawable.profile_icon, // Replace with actual profile icon resource
                 label = "Me",
                 isSelected = isProfileSelected,
                 onClick = onProfileClick
@@ -402,11 +402,11 @@ fun BottomNavItem(
             painter = painterResource(id = iconRes),
             contentDescription = label,
             tint = if (isSelected) DarkBrown1 else Color.Gray,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(32.dp)
         )
         Text(
             text = label,
-            fontSize = 12.sp,
+            modifier = Modifier.padding(top = 2.dp),
             color = if (isSelected) DarkBrown1 else Color.Gray
         )
     }

@@ -59,7 +59,7 @@ fun LoadingScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.character1),
+                painter = painterResource(id = R.drawable.barista),
                 contentDescription = "Colfi Logo",
                 modifier = Modifier
                     .size(120.dp)
