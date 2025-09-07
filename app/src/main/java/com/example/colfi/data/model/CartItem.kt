@@ -1,3 +1,4 @@
+/*
 //Cart Item
 package com.example.colfi.data.model
 
@@ -9,3 +10,4 @@ data class CartItem(
     val totalPrice: Double
         get() = menuItem.price * quantity
 }
+*/

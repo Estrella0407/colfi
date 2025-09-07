@@ -1,3 +1,4 @@
+/*
 package com.example.colfi.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -34,3 +35,4 @@ class CartViewModel : ViewModel() {
         return _cartItems.sumOf { it.totalPrice }
     }
 }
+*/

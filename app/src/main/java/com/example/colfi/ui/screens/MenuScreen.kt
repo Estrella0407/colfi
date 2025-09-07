@@ -23,17 +23,17 @@ import com.example.colfi.ui.theme.LightBrown2
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.MenuViewModel
-import com.example.colfi.ui.viewmodel.CartViewModel
+//import com.example.colfi.ui.viewmodel.CartViewModel
 
 @Composable
 fun MenuScreen(
     userName: String,
     onNavigateToHome: () -> Unit,
     onNavigateToOrders: () -> Unit,
-    onNavigateToCart: () -> Unit,
-    onNavigateToItemDetail: (String) -> Unit, // pass menuItem.id
+    //onNavigateToCart: () -> Unit,
+    //onNavigateToItemDetail: (String) -> Unit, // pass menuItem.id
     viewModel: MenuViewModel = viewModel(),
-    cartViewModel: CartViewModel
+    //cartViewModel: CartViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -128,7 +128,7 @@ fun MenuScreen(
                                 menuItems = uiState.menuItems,
                                 onItemClick = { item ->
                                     // Navigate to detail screen with this item
-                                    onNavigateToItemDetail(item.id)
+                                    //onNavigateToItemDetail(item.id)
                                 }
                             )
                         }

@@ -1,6 +1,7 @@
 package com.example.colfi.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -9,9 +10,15 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.colfi.ui.screens.*
 import com.example.colfi.ui.viewmodel.*
+import com.example.colfi.data.repository.TableRepository
+import com.example.colfi.data.model.AppDatabase
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun NavGraph(navController: NavHostController) {
+    val context = LocalContext.current
+    val db = AppDatabase.getInstance(context) // Assuming you have a getInstance method
+    val tableRepository = remember { TableRepository(db.tableDao()) }
     NavHost(
         navController = navController,
         startDestination = Screen.Loading.route
@@ -61,6 +68,9 @@ fun NavGraph(navController: NavHostController) {
                         launchSingleTop = true
                     }
                 },
+                onNavigateToDineIn = {
+                    navController.navigate(Screen.DineIn.createRoute(userName))
+                },
                 viewModel = viewModel
             )
         }
@@ -72,7 +82,7 @@ fun NavGraph(navController: NavHostController) {
         ) { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
             val viewModel: MenuViewModel = viewModel()
-            val cartViewModel: CartViewModel = viewModel()
+            //val cartViewModel: CartViewModel = viewModel()
 
             MenuScreen(
                 userName = userName,
@@ -87,16 +97,15 @@ fun NavGraph(navController: NavHostController) {
                         launchSingleTop = true
                     }
                 },
-                onNavigateToCart = {
+                /*onNavigateToCart = {
                     navController.navigate(Screen.Cart.createRoute(userName)) {
                         launchSingleTop = true
                     }
-                },
-                onNavigateToItemDetail = { itemId ->
+                },*/
+                /*onNavigateToItemDetail = { itemId ->
                     navController.navigate(Screen.ItemDetail.createRoute(itemId))
-                },
-                viewModel = viewModel,
-                cartViewModel = cartViewModel
+                },*/
+                viewModel = viewModel
             )
         }
 
@@ -125,7 +134,7 @@ fun NavGraph(navController: NavHostController) {
         }
 
         // 🔹 Cart
-        composable(
+        /*composable(
             route = Screen.Cart.route,
             arguments = listOf(navArgument("user_name") { type = NavType.StringType })
         ) { backStackEntry ->
@@ -152,6 +161,25 @@ fun NavGraph(navController: NavHostController) {
                     }
                 },
                 viewModel = cartViewModel
+            )
+        }*/
+
+        composable(
+            route = Screen.DineIn.route,
+            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
+            val dineInViewModelFactory = DineInViewModelFactory(tableRepository)
+            val dineInViewModel: DineInViewModel = viewModel(factory = dineInViewModelFactory)
+
+            DineInScreen(
+                viewModel = dineInViewModel,
+                onTableClick = { tableId ->
+                    println("Selected table: $tableId")
+                    navController.navigate(Screen.Menu.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                }
             )
         }
     }

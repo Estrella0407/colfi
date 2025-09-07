@@ -20,7 +20,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.R
 import com.example.colfi.data.model.User
 import com.example.colfi.ui.theme.DarkBrown1
-import com.example.colfi.ui.theme.LightBrown1
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.HomeViewModel
@@ -30,7 +29,8 @@ fun CustomerHomeScreen(
     userName: String,
     onNavigateToMenu: () -> Unit,
     onNavigateToOrders: () -> Unit,
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(),
+    onNavigateToDineIn: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -67,7 +67,11 @@ fun CustomerHomeScreen(
             ) {
                 ColfiHeader(randomQuote = uiState.randomQuote)
                 Spacer(modifier = Modifier.height(32.dp))
-                OrderOptions()
+                OrderOptions(
+                    onDineInClick = { onNavigateToDineIn() },
+                    onPickUpClick = { /* Handle pick up */ },
+                    onDeliveryClick = { /* Handle delivery */ }
+                )
                 Spacer(modifier = Modifier.height(24.dp))
                 uiState.user?.let { user ->
                     UserInfoSection(user = user)
@@ -148,14 +152,19 @@ fun ColfiHeader(randomQuote: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun OrderOptions(modifier: Modifier = Modifier) {
+fun OrderOptions(
+    onDineInClick: () -> Unit,
+    onPickUpClick: () -> Unit,
+    onDeliveryClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        OrderOptionCard(R.drawable.dine_in, "Dine In") { /* Handle dine in */ }
-        OrderOptionCard(R.drawable.pick_up, "Pick Up") { /* Handle pick up */ }
-        OrderOptionCard(R.drawable.delivery, "Delivery") { /* Handle delivery */ }
+        OrderOptionCard(R.drawable.dine_in, "Dine In", onClick = onDineInClick)
+        OrderOptionCard(R.drawable.pick_up, "Pick Up", onClick = onPickUpClick)
+        OrderOptionCard(R.drawable.delivery, "Delivery", onClick = onDeliveryClick)
     }
 }
 
