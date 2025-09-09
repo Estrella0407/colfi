@@ -1,3 +1,4 @@
+/*
 // DineInViewModel.kt
 package com.example.colfi.ui.viewmodel
 
@@ -32,3 +33,4 @@ class DineInViewModel(private val repository: TableRepository) : ViewModel() {
         }
     }
 }
+*/

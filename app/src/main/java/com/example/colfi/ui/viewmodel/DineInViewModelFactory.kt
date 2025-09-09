@@ -1,3 +1,4 @@
+/*
 // File: com/example/colfi/ui/viewmodel/DineInViewModelFactory.kt
 package com.example.colfi.ui.viewmodel
 
@@ -16,4 +17,4 @@ class DineInViewModelFactory(
         }
         throw IllegalArgumentException("Unknown ViewModel class: " + modelClass.name)
     }
-}
+}*/

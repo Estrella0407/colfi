@@ -1,3 +1,4 @@
+//NavGraph.kt
 package com.example.colfi.navigation
 
 import androidx.compose.runtime.Composable
@@ -10,15 +11,15 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.colfi.ui.screens.*
 import com.example.colfi.ui.viewmodel.*
-import com.example.colfi.data.repository.TableRepository
-import com.example.colfi.data.model.AppDatabase
+//import com.example.colfi.data.repository.TableRepository
+//import com.example.colfi.data.model.AppDatabase
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun NavGraph(navController: NavHostController) {
-    val context = LocalContext.current
+    /*val context = LocalContext.current
     val db = AppDatabase.getInstance(context) // Assuming you have a getInstance method
-    val tableRepository = remember { TableRepository(db.tableDao()) }
+    val tableRepository = remember { TableRepository(db.tableDao()) }*/
     NavHost(
         navController = navController,
         startDestination = Screen.Loading.route
@@ -70,6 +71,9 @@ fun NavGraph(navController: NavHostController) {
                 },
                 onNavigateToDineIn = {
                     navController.navigate(Screen.DineIn.createRoute(userName))
+                },
+                onNavigateToPickUp = {
+                    navController.navigate(Screen.PickUp.createRoute(userName))
                 },
                 viewModel = viewModel
             )
@@ -164,7 +168,8 @@ fun NavGraph(navController: NavHostController) {
             )
         }*/
 
-        composable(
+        //Dine In
+        /*composable(
             route = Screen.DineIn.route,
             arguments = listOf(navArgument("user_name") { type = NavType.StringType })
         ) { backStackEntry ->
@@ -177,6 +182,25 @@ fun NavGraph(navController: NavHostController) {
                 onTableClick = { tableId ->
                     println("Selected table: $tableId")
                     navController.navigate(Screen.Menu.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                }
+            )*/
+        // 🔹 Pick Up
+        composable(
+            route = Screen.PickUp.route,
+            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
+            val viewModel: PickUpViewModel = viewModel()
+
+            PickUpScreen(
+                userName = userName,
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() },
+                onOrderNow = {
+                    // You can later navigate to payment or orders confirmation
+                    navController.navigate(Screen.Orders.createRoute(userName)) {
                         launchSingleTop = true
                     }
                 }

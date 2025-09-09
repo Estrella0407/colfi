@@ -1,3 +1,4 @@
+/*
 // TableDao.kt
 package com.example.colfi.data.model
 
@@ -19,3 +20,4 @@ interface TableDao {
     @Update
     suspend fun updateTable(table: TableEntity)
 }
+*/

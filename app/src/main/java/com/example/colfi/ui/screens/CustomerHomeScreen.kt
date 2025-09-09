@@ -30,7 +30,8 @@ fun CustomerHomeScreen(
     onNavigateToMenu: () -> Unit,
     onNavigateToOrders: () -> Unit,
     viewModel: HomeViewModel = viewModel(),
-    onNavigateToDineIn: () -> Unit
+    onNavigateToDineIn: () -> Unit,
+    onNavigateToPickUp: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -69,7 +70,7 @@ fun CustomerHomeScreen(
                 Spacer(modifier = Modifier.height(32.dp))
                 OrderOptions(
                     onDineInClick = { onNavigateToDineIn() },
-                    onPickUpClick = { /* Handle pick up */ },
+                    onPickUpClick = { onNavigateToPickUp() },
                     onDeliveryClick = { /* Handle delivery */ }
                 )
                 Spacer(modifier = Modifier.height(24.dp))

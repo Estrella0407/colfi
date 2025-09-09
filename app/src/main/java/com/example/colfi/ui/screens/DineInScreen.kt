@@ -1,3 +1,4 @@
+/*
 //Dine In Screen.kt
 package com.example.colfi.ui.screens
 
@@ -101,3 +102,4 @@ fun SquareButton(
         )
     }
 }
+*/

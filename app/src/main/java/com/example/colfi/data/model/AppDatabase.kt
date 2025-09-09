@@ -1,3 +1,4 @@
+/*
 // AppDatabase.kt
 package com.example.colfi.data.model
 
@@ -27,3 +28,4 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 }
+*/

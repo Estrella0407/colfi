@@ -1,3 +1,4 @@
+/*
 // TableRepository.kt
 package com.example.colfi.data.repository
 
@@ -18,3 +19,4 @@ class TableRepository(private val tableDao: TableDao) {
         }
     }
 }
+*/

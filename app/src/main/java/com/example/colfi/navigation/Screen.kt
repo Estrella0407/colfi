@@ -22,5 +22,8 @@ sealed class Screen(val route: String) {
     object DineIn : Screen("dinein/{user_name}") {
         fun createRoute(userName: String) = "dinein/$userName"
     }
+    object PickUp : Screen("pickup/{user_name}") {
+        fun createRoute(userName: String) = "pickup/$userName"
+    }
 
 }

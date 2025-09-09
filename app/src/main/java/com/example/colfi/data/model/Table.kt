@@ -1,3 +1,4 @@
+/*
 package com.example.colfi.data.model
 
 import androidx.room.Entity
@@ -8,3 +9,4 @@ data class TableEntity(
     @PrimaryKey val tableId: String,
     val isAvailable: Boolean
 )
+*/
