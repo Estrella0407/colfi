@@ -48,13 +48,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.colfi.data.model.CartItem
 import com.example.colfi.data.model.MenuItem
+import com.example.colfi.data.repository.CartRepository
 import com.example.colfi.ui.theme.LightBrown2
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.CartViewModel
+import com.example.colfi.ui.viewmodel.CartViewModelFactory
 import com.example.colfi.ui.viewmodel.MenuViewModel
 
 @Composable
@@ -66,12 +69,13 @@ fun MenuScreen(
     onNavigateToOrders: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToCart: () -> Unit,
-    onNavigateToItemDetail: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    cartRespository: CartRepository
 ) {
     val uiState by menuViewModel.uiState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var selectedMenuItemForPopup by remember { mutableStateOf<MenuItem?>(null) }
+    val cartViewModel: CartViewModel = viewModel(factory = CartViewModelFactory(cartRespository))
 
     Box(
         modifier = Modifier
@@ -164,7 +168,7 @@ fun MenuScreen(
                             MenuItemsList(
                                 menuItems = uiState.menuItems,
                                 onItemDetailClick = { item ->
-                                    onNavigateToItemDetail(item.id)
+                                    println("hello world")
                                 },
                                 onAddToCartClick = { item ->
                                     selectedMenuItemForPopup = item

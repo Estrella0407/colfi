@@ -1,12 +1,15 @@
 package com.example.colfi.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.example.colfi.ColfiApplication
+import com.example.colfi.data.repository.CartRepository
 import com.example.colfi.ui.screens.*
 import com.example.colfi.ui.viewmodel.*
 
@@ -108,7 +111,14 @@ fun NavGraph(navController: NavHostController) {
         ) { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
             val menuViewModel: MenuViewModel = viewModel()
-            val cartViewModel: CartViewModel = viewModel()
+
+            val context = LocalContext.current
+            val application = context.applicationContext as ColfiApplication
+            val cartRepositoryFromApplication: CartRepository = application.cartRepository
+
+            val cartViewModel: CartViewModel = viewModel(
+                factory = CartViewModelFactory(cartRepositoryFromApplication)
+            )
 
             MenuScreen(
                 userName = userName,
@@ -138,9 +148,7 @@ fun NavGraph(navController: NavHostController) {
                         restoreState = true
                     }
                 },
-                onNavigateToItemDetail = { itemId: String ->
-                    navController.navigate(Screen.ItemDetail.createRoute(itemId))
-                }
+                cartRespository = cartRepositoryFromApplication
             )
         }
 
