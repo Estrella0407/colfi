@@ -13,6 +13,77 @@ class AuthRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val usersCollection = firestore.collection("users")
 
+    suspend fun checkUsernameAvailability(username: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val query = usersCollection.whereEqualTo("username", username).get().await()
+                query.isEmpty
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+
+    suspend fun checkEmailAvailability(email: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val query = usersCollection.whereEqualTo("email", email).get().await()
+                query.isEmpty
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+
+    // Enhanced register method with validation
+    suspend fun register(
+        email: String,
+        password: String,
+        username: String,
+        displayName: String
+    ): Result<User> {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Check if email already exists
+                if (!checkEmailAvailability(email)) {
+                    return@withContext Result.failure(Exception("Email already in use"))
+                }
+
+                // Check if username already exists
+                if (!checkUsernameAvailability(username)) {
+                    return@withContext Result.failure(Exception("Username already taken"))
+                }
+
+                // Create Firebase Auth user
+                val authResult = auth.createUserWithEmailAndPassword(email, password).await()
+                val firebaseUser = authResult.user
+
+                if (firebaseUser != null) {
+                    // Send email verification (optional but recommended)
+                    firebaseUser.sendEmailVerification().await()
+
+                    // Create user profile in Firestore
+                    val user = User(
+                        id = firebaseUser.uid,
+                        username = username,
+                        displayName = displayName,
+                        email = email,
+                        walletBalance = 150.55, // Default welcome bonus
+                        points = 100, // Default welcome points
+                        vouchers = 1 // Default welcome voucher
+                    )
+
+                    usersCollection.document(firebaseUser.uid).set(user.toMap()).await()
+                    Result.success(user)
+                } else {
+                    Result.failure(Exception("Failed to create user"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
     suspend fun login(email: String, password: String): Result<User> {
         return withContext(Dispatchers.IO) {
             try {
@@ -46,36 +117,6 @@ class AuthRepository {
                     }
                 } else {
                     Result.failure(Exception("Authentication failed"))
-                }
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-    }
-
-    suspend fun register(email: String, password: String, username: String, displayName: String): Result<User> {
-        return withContext(Dispatchers.IO) {
-            try {
-                // Create Firebase Auth user
-                val authResult = auth.createUserWithEmailAndPassword(email, password).await()
-                val firebaseUser = authResult.user
-
-                if (firebaseUser != null) {
-                    // Create user profile in Firestore
-                    val user = User(
-                        id = firebaseUser.uid,
-                        username = username,
-                        displayName = displayName,
-                        email = email,
-                        walletBalance = 150.55, // Default values
-                        points = 0,
-                        vouchers = 0
-                    )
-
-                    usersCollection.document(firebaseUser.uid).set(user.toMap()).await()
-                    Result.success(user)
-                } else {
-                    Result.failure(Exception("Failed to create user"))
                 }
             } catch (e: Exception) {
                 Result.failure(e)

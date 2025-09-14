@@ -3,6 +3,8 @@ package com.example.colfi.navigation
 
 sealed class Screen(val route: String) {
     object Loading : Screen("loading")
+
+    object SignUp : Screen("sign_up")
     object Login : Screen("login")
     object CustomerHome : Screen("customer_home/{user_name}") {
         fun createRoute(userName: String) = "customer_home/$userName"
@@ -23,5 +25,7 @@ sealed class Screen(val route: String) {
     object ItemDetail : Screen("itemDetail/{item_id}") {
         fun createRoute(itemId: String) = "itemDetail/$itemId"
     }
-
+    object Checkout : Screen("checkout/{user_name}") {
+        fun createRoute(userName: String) = "checkout/$userName"
+    }
 }

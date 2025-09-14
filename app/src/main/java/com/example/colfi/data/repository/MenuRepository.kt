@@ -5,7 +5,7 @@ import com.example.colfi.data.model.MenuItem
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
-class MenuRepository {
+class MenuRepository () {
     private val db = FirebaseFirestore.getInstance()
 
     private val categories = listOf("coffee", "non-coffee", "tea", "add-on")
@@ -22,7 +22,7 @@ class MenuRepository {
             val items = snapshot.documents.mapNotNull { document ->
                 document.toObject(MenuItem::class.java)?.copy(
                     id = document.id,
-                    categoryID = categoryName // Set the category for each item
+                    category = categoryName // Set the category for each item
                 )
             }
 
@@ -47,7 +47,7 @@ class MenuRepository {
                 val items = snapshot.documents.mapNotNull { document ->
                     document.toObject(MenuItem::class.java)?.copy(
                         id = document.id,
-                        categoryID = category // Set the category for each item
+                        category = category // Set the category for each item
                     )
                 }
                 allItems.addAll(items)
@@ -72,7 +72,7 @@ class MenuRepository {
             val item = if (document.exists()) {
                 document.toObject(MenuItem::class.java)?.copy(
                     id = document.id,
-                    categoryID = categoryName
+                    category = categoryName
                 )
             } else null
 
@@ -98,7 +98,7 @@ class MenuRepository {
                 val items = snapshot.documents.mapNotNull { document ->
                     document.toObject(MenuItem::class.java)?.copy(
                         id = document.id,
-                        categoryID = category
+                        category = category
                     )
                 }.filter { item ->
                     // Simple search by name (case-insensitive)

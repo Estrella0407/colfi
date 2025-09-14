@@ -1,149 +1,208 @@
+// CartScreen.kt
 package com.example.colfi.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.data.model.CartItem
-import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.CartViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
-    userName: String,
-    onBack: () -> Unit,
-    onNavigateToMenu: () -> Unit,
-    onNavigateToHome: () -> Unit,
-    viewModel: CartViewModel
+    cartViewModel: CartViewModel = viewModel(),
+    onNavigateBack: () -> Unit,
+    onProceedToCheckout: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val cartItems = viewModel.cartItems
-    val totalPrice = viewModel.getTotalPrice()
+    val uiState by cartViewModel.uiState.collectAsState()
+    var showClearCartDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Your Cart",
-                        fontFamily = colfiFont,
-                        fontWeight = FontWeight.Bold
+                        text = "Cart (${uiState.itemCount} items)",
+                        fontWeight = FontWeight.SemiBold
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    if (uiState.cartItems.isNotEmpty()) {
+                        IconButton(onClick = { showClearCartDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Clear cart",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(Color.White)
-        ) {
-            if (cartItems.isEmpty()) {
-                // Empty cart message
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+        },
+        bottomBar = {
+            if (uiState.cartItems.isNotEmpty()) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 8.dp
                 ) {
-                    Text(
-                        text = "Your cart is empty",
-                        fontFamily = colfiFont,
-                        fontSize = 16.sp,
-                        color = Color.Gray
-                    )
-                }
-            } else {
-                // List of cart items
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(cartItems) { item ->
-                        CartItemCard(
-                            cartItem = item,
-                            onRemove = { viewModel.removeFromCart(item) }
-                        )
-                    }
-                }
-
-                // Bottom bar (Total & Buttons)
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFF8F8F8))
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        Text(
-                            text = "Total:",
-                            fontFamily = colfiFont,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp
-                        )
-                        Text(
-                            text = "RM ${String.format("%.2f", totalPrice)}",
-                            fontFamily = colfiFont,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            color = Color(0xFFD2B48C)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Checkout button
-                    Button(
-                        onClick = { println("Checkout pressed") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD2B48C)),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            text = "Checkout",
-                            fontFamily = colfiFont,
-                            color = Color.Black,
-                            fontSize = 16.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Quick navigation buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        OutlinedButton(onClick = onNavigateToMenu) {
-                            Text("Back to Menu", fontFamily = colfiFont)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Total:",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "RM ${String.format("%.2f", uiState.totalPrice)}",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
-                        OutlinedButton(onClick = onNavigateToHome) {
-                            Text("Home", fontFamily = colfiFont)
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Button(
+                            onClick = onProceedToCheckout,
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(vertical = 16.dp)
+                        ) {
+                            Text(
+                                text = "Proceed to Checkout",
+                                style = MaterialTheme.typography.titleMedium
+                            )
                         }
                     }
                 }
             }
+        },
+        modifier = modifier
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                uiState.cartItems.isEmpty() -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Your cart is empty",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "Add some items to get started",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Button(onClick = onNavigateBack) {
+                            Text("Browse Menu")
+                        }
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(
+                            items = uiState.cartItems,
+                            key = { "${it.menuItem.id}_${it.options}" }
+                        ) { cartItem ->
+                            CartItemCard(
+                                cartItem = cartItem,
+                                onQuantityChange = { newQuantity ->
+                                    cartViewModel.updateCartItemQuantity(cartItem, newQuantity)
+                                },
+                                onRemove = {
+                                    cartViewModel.removeFromCart(cartItem)
+                                }
+                            )
+                        }
+
+                        // Add some bottom padding for better UX
+                        item {
+                            Spacer(modifier = Modifier.height(100.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Clear cart confirmation dialog
+    if (showClearCartDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearCartDialog = false },
+            title = { Text("Clear Cart") },
+            text = { Text("Are you sure you want to remove all items from your cart?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        cartViewModel.clearCart()
+                        showClearCartDialog = false
+                    }
+                ) {
+                    Text("Clear", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearCartDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Show error message if any
+    uiState.errorMessage.takeIf { it.isNotEmpty() }?.let { error ->
+        LaunchedEffect(error) {
+            // You can show a snackbar or handle error as needed
+            cartViewModel.clearErrorMessage()
         }
     }
 }
@@ -151,54 +210,107 @@ fun CartScreen(
 @Composable
 fun CartItemCard(
     cartItem: CartItem,
-    onRemove: () -> Unit
+    onQuantityChange: (Int) -> Unit,
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
         ) {
-            Column {
-                Text(
-                    text = cartItem.menuItem.name,
-                    fontFamily = colfiFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Text(
-                    text = cartItem.option, // Hot or Ice
-                    fontFamily = colfiFont,
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-                Text(
-                    text = "Qty: ${cartItem.quantity}",
-                    fontFamily = colfiFont,
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = cartItem.menuItem.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    // Show selected options
+                    if (cartItem.options.isNotEmpty()) {
+                        Text(
+                            text = cartItem.options,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+
+                    Text(
+                        text = "RM ${String.format("%.2f", cartItem.menuItem.price)} each",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
+                IconButton(onClick = onRemove) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Remove item",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
 
-            Column(horizontalAlignment = Alignment.End) {
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Quantity controls
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = { onQuantityChange(cartItem.quantity - 1) },
+                        enabled = cartItem.quantity > 1
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Remove,
+                            contentDescription = "Decrease quantity"
+                        )
+                    }
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Text(
+                            text = cartItem.quantity.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { onQuantityChange(cartItem.quantity + 1) }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Increase quantity"
+                        )
+                    }
+                }
+
+                // Total price for this item
                 Text(
                     text = "RM ${String.format("%.2f", cartItem.totalPrice)}",
-                    fontFamily = colfiFont,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = Color(0xFFD2B48C)
+                    color = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                TextButton(onClick = onRemove) {
-                    Text("Remove", color = Color.Red, fontFamily = colfiFont)
-                }
             }
         }
     }

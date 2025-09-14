@@ -25,6 +25,7 @@ import com.example.colfi.ui.viewmodel.LoginViewModel
 @Composable
 fun LoginScreen(
     onNavigateToHome: (String) -> Unit,
+    onNavigateToSignUp: () -> Unit,
     viewModel: LoginViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -187,16 +188,13 @@ fun LoginScreen(
 
         // Add registration hint
         TextButton(
-            onClick = {
-                // TODO: Implement registration screen navigation
-                // For now, show a message
-            }
+            onClick = { onNavigateToSignUp }
         ) {
             Text(
-                text = "Don't have an account? Contact admin",
+                text = "Don't have an account? Sign up",
                 fontFamily = colfiFont,
                 fontSize = 12.sp,
-                color = Color.Gray
+                color = LightBrown1
             )
         }
     }

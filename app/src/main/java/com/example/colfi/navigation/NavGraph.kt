@@ -26,7 +26,27 @@ fun NavGraph(navController: NavHostController) {
                 },
                 onNavigateToHome = { userName ->
                     navController.navigate(Screen.CustomerHome.createRoute(userName)) {
-                        popUpTo(Screen.Loading.route) { inclusive = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                viewModel = viewModel
+            )
+        }
+
+        composable(Screen.SignUp.route) {
+            val viewModel: SignUpViewModel = viewModel()
+            SignUpScreen(
+                onNavigateToHome = { userName ->
+                    navController.navigate(Screen.CustomerHome.createRoute(userName)) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 viewModel = viewModel
@@ -38,7 +58,14 @@ fun NavGraph(navController: NavHostController) {
             LoginScreen(
                 onNavigateToHome = { userName ->
                     navController.navigate(Screen.CustomerHome.createRoute(userName)) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigateToSignUp = {
+                    navController.navigate(Screen.SignUp.route) {
+                        launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 viewModel = viewModel
@@ -56,16 +83,19 @@ fun NavGraph(navController: NavHostController) {
                 onNavigateToMenu = {
                     navController.navigate(Screen.Menu.createRoute(userName)) {
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 onNavigateToOrders = {
                     navController.navigate(Screen.Orders.createRoute(userName)) {
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 onNavigateToProfile = {
                     navController.navigate(Screen.Profile.createRoute(userName)) {
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 viewModel = viewModel
@@ -77,37 +107,40 @@ fun NavGraph(navController: NavHostController) {
             arguments = listOf(navArgument("user_name") { type = NavType.StringType })
         ) { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
-            val viewModel: MenuViewModel = viewModel()
+            val menuViewModel: MenuViewModel = viewModel()
             val cartViewModel: CartViewModel = viewModel()
 
             MenuScreen(
                 userName = userName,
+                menuViewModel = menuViewModel,
+                cartViewModel = cartViewModel,
                 onNavigateToHome = {
                     navController.navigate(Screen.CustomerHome.createRoute(userName)) {
-                        popUpTo(Screen.CustomerHome.route) { inclusive = false }
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 onNavigateToOrders = {
                     navController.navigate(Screen.Orders.createRoute(userName)) {
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 onNavigateToProfile = {
                     navController.navigate(Screen.Profile.createRoute(userName)) {
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 onNavigateToCart = {
                     navController.navigate(Screen.Cart.createRoute(userName)) {
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
-                onNavigateToItemDetail = { itemId ->
+                onNavigateToItemDetail = { itemId: String ->
                     navController.navigate(Screen.ItemDetail.createRoute(itemId))
-                },
-                viewModel = viewModel,
-                cartViewModel = cartViewModel
+                }
             )
         }
 
@@ -122,17 +155,19 @@ fun NavGraph(navController: NavHostController) {
                 onNavigateToMenu = {
                     navController.navigate(Screen.Menu.createRoute(userName)) {
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 onNavigateToHome = {
                     navController.navigate(Screen.CustomerHome.createRoute(userName)) {
-                        popUpTo(Screen.Orders.route) { inclusive = true }
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 onNavigateToProfile = {
                     navController.navigate(Screen.Profile.createRoute(userName)) {
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 viewModel = viewModel
@@ -149,18 +184,20 @@ fun NavGraph(navController: NavHostController) {
                 userName = userName,
                 onNavigateToHome = {
                     navController.navigate(Screen.CustomerHome.createRoute(userName)) {
-                        popUpTo(Screen.Orders.route) { inclusive = true }
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 onNavigateToMenu = {
                     navController.navigate(Screen.Menu.createRoute(userName)) {
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 onNavigateToOrders = {
                     navController.navigate(Screen.Orders.createRoute(userName)) {
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 onNavigateToLogin = {
@@ -179,26 +216,19 @@ fun NavGraph(navController: NavHostController) {
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
             val cartViewModel: CartViewModel = viewModel()
             CartScreen(
-                userName = userName,
-                onBack = {
+                cartViewModel = cartViewModel,
+                onNavigateBack = {
                     if (!navController.popBackStack()) {
                         navController.navigate(Screen.CustomerHome.createRoute(userName)) {
                             launchSingleTop = true
+                            restoreState = true
                         }
                     }
                 },
-                onNavigateToMenu = {
-                    navController.navigate(Screen.Menu.createRoute(userName)) {
-                        launchSingleTop = true
-                    }
-                },
-                onNavigateToHome = {
-                    navController.navigate(Screen.CustomerHome.createRoute(userName)) {
-                        popUpTo(Screen.CustomerHome.route) { inclusive = false }
-                        launchSingleTop = true
-                    }
-                },
-                viewModel = cartViewModel
+                onProceedToCheckout = {
+                    // Navigate to checkout screen when implemented
+                    // navController.navigate(Screen.Checkout.createRoute(userName))
+                }
             )
         }
     }

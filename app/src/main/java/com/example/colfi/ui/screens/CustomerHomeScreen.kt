@@ -364,19 +364,19 @@ fun BottomNavigation(
                 onClick = onHomeClick
             )
             BottomNavItem(
-                iconRes = R.drawable.menu, // Replace with actual menu icon resource
+                iconRes = R.drawable.menu,
                 label = "Menu",
-                isSelected = false,
+                isSelected = isMenuSelected,
                 onClick = onMenuClick
             )
             BottomNavItem(
-                iconRes = R.drawable.order_history, // Replace with actual orders icon resource
+                iconRes = R.drawable.order_history,
                 label = "Orders",
                 isSelected = isOrdersSelected,
                 onClick = onOrdersClick
             )
             BottomNavItem(
-                iconRes = R.drawable.profile_icon, // Replace with actual profile icon resource
+                iconRes = R.drawable.profile_icon,
                 label = "Me",
                 isSelected = isProfileSelected,
                 onClick = onProfileClick
