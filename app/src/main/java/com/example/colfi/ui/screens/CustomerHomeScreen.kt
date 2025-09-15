@@ -31,7 +31,9 @@ fun CustomerHomeScreen(
     onNavigateToOrders: () -> Unit,
     viewModel: HomeViewModel = viewModel(),
     onNavigateToDineIn: () -> Unit,
-    onNavigateToPickUp: () -> Unit
+    onNavigateToPickUp: () -> Unit,
+    onNavigateToDelivery:()-> Unit,
+    onNavigateToWallet: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -71,11 +73,11 @@ fun CustomerHomeScreen(
                 OrderOptions(
                     onDineInClick = { onNavigateToDineIn() },
                     onPickUpClick = { onNavigateToPickUp() },
-                    onDeliveryClick = { /* Handle delivery */ }
+                    onDeliveryClick = { onNavigateToDelivery()  }
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 uiState.user?.let { user ->
-                    UserInfoSection(user = user)
+                    UserInfoSection(user = user, onWalletClick = { onNavigateToWallet(userName) })
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 CafeInfoSection()
@@ -207,7 +209,9 @@ fun OrderOptionCard(
 }
 
 @Composable
-fun UserInfoSection(user: User, modifier: Modifier = Modifier) {
+fun UserInfoSection(user: User,
+                    modifier: Modifier = Modifier,
+                    onWalletClick: () -> Unit) {
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -238,7 +242,9 @@ fun UserInfoSection(user: User, modifier: Modifier = Modifier) {
             InfoCard(
                 title = String.format("%.2f", user.walletBalance),
                 subtitle = "Wallet (RM)",
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onWalletClick() }
             )
             Spacer(modifier = Modifier.width(16.dp))
             InfoCard(
@@ -263,7 +269,9 @@ fun InfoCard(title: String, subtitle: String, modifier: Modifier = Modifier) {
         colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE4D1))
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(text = title, fontFamily = colfiFont, fontSize = 18.sp, fontWeight = FontWeight.Normal)

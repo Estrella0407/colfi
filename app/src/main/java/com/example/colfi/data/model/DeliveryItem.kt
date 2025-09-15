@@ -1,7 +1,7 @@
 //Pick Up Item
 package com.example.colfi.data.model
 
-data class PickUpItem(
+data class DeliveryItem(
     val id: String,              // Unique ID for the item
     val name: String,            // Item name (e.g., "Latte")
     val quantity: Int = 1,       // Quantity chosen

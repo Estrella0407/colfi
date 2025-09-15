@@ -40,6 +40,7 @@ fun PickUpScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    var showSuccessDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.orderItemPrice) {
         if (uiState.orderItemPrice > 0) {
@@ -111,7 +112,7 @@ fun PickUpScreen(
             Text(
                 text = uiState.storeAddress,
                 fontFamily = colfiFont,
-                fontSize = 12.sp,
+                fontSize = 15.sp,
                 color = Color.Gray
             )
 
@@ -248,7 +249,10 @@ fun PickUpScreen(
 
         // Bottom Order Button
         Button(
-            onClick = onOrderNow,
+            onClick = {
+                showSuccessDialog = true
+                onOrderNow()
+            },
             colors = ButtonDefaults.buttonColors(containerColor = LightBrown2),
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier
@@ -263,6 +267,43 @@ fun PickUpScreen(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
+            )
+        }
+
+        if (showSuccessDialog) {
+            LaunchedEffect(Unit) {
+                kotlinx.coroutines.delay(3000)
+                showSuccessDialog = false
+            }
+
+            AlertDialog(
+                onDismissRequest = { showSuccessDialog = false },
+                confirmButton = {},
+                text = {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        // Success Image
+                        Icon(
+                            painter = painterResource(id = R.drawable.successful),
+                            contentDescription = "Success",
+
+                            modifier = Modifier.size(80.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            "Placed Successfully",
+                            fontFamily = colfiFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                    }
+                },
+                containerColor = LightCream1
             )
         }
     }
@@ -288,3 +329,4 @@ fun PaymentDetailRow(label: String, amount: String, isBold: Boolean = false) {
         )
     }
 }
+

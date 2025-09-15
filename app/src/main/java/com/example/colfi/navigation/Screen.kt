@@ -25,5 +25,14 @@ sealed class Screen(val route: String) {
     object PickUp : Screen("pickup/{user_name}") {
         fun createRoute(userName: String) = "pickup/$userName"
     }
+    object Delivery : Screen("delivery/{user_name}") {
+        fun createRoute(userName: String) = "delivery/$userName"
+    }
+    object Wallet : Screen("wallet/{user_name}") {
+        fun createRoute(userName: String) = "wallet/$userName"
+    }
+    object Register : Screen("register/{user_name}"){
+        fun createRoute(userName: String) = "register/$userName"
+    }
 
 }

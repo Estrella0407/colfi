@@ -1,6 +1,7 @@
 // LoginScreen.kt
 package com.example.colfi.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -15,19 +16,33 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.ui.theme.*
-import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.LoginViewModel
 
 @Composable
 fun LoginScreen(
     onNavigateToHome: (String) -> Unit,
+    onNavigateAsGuest: () -> Unit, // <<< 1. ADD THIS NEW PARAMETER for guest navigation
+    onNavigateToRegister: () -> Unit,
     viewModel: LoginViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // --- 2. ADD THIS LaunchedEffect TO HANDLE NAVIGATION ---
+    // This block observes the login state and navigates automatically on success.
+    LaunchedEffect(uiState.isLoginSuccessful, uiState.loggedInUserName) {
+        // When isLoginSuccessful becomes true and we have a username...
+        if (uiState.isLoginSuccessful && uiState.loggedInUserName != null) {
+            // ...navigate to the home screen...
+            onNavigateToHome(uiState.loggedInUserName!!)
+            // ...and immediately tell the ViewModel the navigation has been handled.
+            viewModel.onLoginHandled()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -71,6 +86,7 @@ fun LoginScreen(
             value = uiState.password,
             onValueChange = viewModel::updatePassword,
             label = { Text("Password", color = DarkBrown1) },
+            // ... other properties are fine ...
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             visualTransformation = if (uiState.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -100,56 +116,53 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { viewModel.login(onNavigateToHome) },
+            // --- 3. UPDATE THE onClick LAMBDA ---
+            onClick = { viewModel.login() }, // Simply call the login function
             modifier = Modifier.fillMaxWidth(),
-            enabled = !uiState.isLoading && uiState.username.isNotEmpty() && uiState.password.isNotEmpty()
+            enabled = !uiState.isLoading
         ) {
             if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = LightCream3)
-                Spacer(modifier = Modifier.width(8.dp))
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = LightCream3)
+            } else {
+                Text(text = "Login", fontFamily = colfiFont)
             }
-            Text(text = if (uiState.isLoading) "Logging in..." else "Login", fontFamily = colfiFont)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TextButton(
-            onClick = { viewModel.loginAsGuest(onNavigateToHome) }
-        ) {
-            Text(text = "Continue as Guest", fontFamily = colfiFont, color = Color.Gray)
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Card(
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+            horizontalArrangement = Arrangement.End // Align to the right
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Demo Credentials",
-                    fontFamily = colfiFont,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Username: admin | Password: 123456",
-                    fontFamily = colfiFont,
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-                Text(
-                    text = "Username: jenny | Password: password",
-                    fontFamily = colfiFont,
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-            }
+            Text(
+                text = "Continue as Guest",
+                color = DarkBrown1,
+                fontFamily = colfiFont,
+                fontSize = 14.sp,
+                textDecoration = TextDecoration.Underline, // underline
+                modifier = Modifier.clickable {
+                    viewModel.loginAsGuest()
+                }
+            )
         }
+
+        // Register Button
+        TextButton(onClick = onNavigateToRegister) {
+            Text("Don't have an account? Register",
+                color = DarkBrown1,
+                fontFamily = colfiFont,
+                fontSize = 14.sp
+                )
+        }
+
+        // Display error message if it exists
+        if (uiState.errorMessage.isNotEmpty()) {
+            Text(
+                text = uiState.errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+
     }
 }
-
