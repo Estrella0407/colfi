@@ -1,6 +1,7 @@
 // LoginScreen.kt
 package com.example.colfi.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -15,20 +16,34 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.ui.theme.*
-import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.LoginViewModel
 
 @Composable
 fun LoginScreen(
     onNavigateToHome: (String) -> Unit,
+    onNavigateAsGuest: () -> Unit, // <<< 1. ADD THIS NEW PARAMETER for guest navigation
+    onNavigateToRegister: () -> Unit,
     onNavigateToSignUp: () -> Unit,
     viewModel: LoginViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // --- 2. ADD THIS LaunchedEffect TO HANDLE NAVIGATION ---
+    // This block observes the login state and navigates automatically on success.
+    LaunchedEffect(uiState.isLoginSuccessful, uiState.loggedInUserName) {
+        // When isLoginSuccessful becomes true and we have a username...
+        if (uiState.isLoginSuccessful && uiState.loggedInUserName != null) {
+            // ...navigate to the home screen...
+            onNavigateToHome(uiState.loggedInUserName!!)
+            // ...and immediately tell the ViewModel the navigation has been handled.
+            viewModel.onLoginHandled()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -54,14 +69,13 @@ fun LoginScreen(
         )
         Spacer(modifier = Modifier.height(48.dp))
 
-        // Changed from Username to Email for Firebase
         OutlinedTextField(
             value = uiState.username,
             onValueChange = viewModel::updateUsername,
-            label = { Text("Email", color = DarkBrown1) },
+            label = { Text("Username", color = DarkBrown1) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), // Changed to Email
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = LightBrown1,
                 unfocusedBorderColor = DarkBrown1
@@ -102,100 +116,53 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { viewModel.login(onNavigateToHome) },
+            // --- 3. UPDATE THE onClick LAMBDA ---
+            onClick = { viewModel.login() }, // Simply call the login function
             modifier = Modifier.fillMaxWidth(),
-            enabled = !uiState.isLoading && uiState.username.isNotEmpty() && uiState.password.isNotEmpty()
+            enabled = !uiState.isLoading
         ) {
             if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = LightCream3)
-                Spacer(modifier = Modifier.width(8.dp))
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = LightCream3)
+            } else {
+                Text(text = "Login", fontFamily = colfiFont)
             }
-            Text(text = if (uiState.isLoading) "Logging in..." else "Login", fontFamily = colfiFont)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TextButton(
-            onClick = { viewModel.loginAsGuest(onNavigateToHome) }
-        ) {
-            Text(text = "Continue as Guest", fontFamily = colfiFont, color = Color.Gray)
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Updated demo credentials card for Firebase
-        Card(
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Demo Credentials",
-                    fontFamily = colfiFont,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Email: admin@colfi.com | Password: 123456",
-                    fontFamily = colfiFont,
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-                Text(
-                    text = "Email: jenny@colfi.com | Password: 123456",
-                    fontFamily = colfiFont,
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Quick login buttons for demo
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    OutlinedButton(
-                        onClick = { viewModel.loginWithDemo("admin", onNavigateToHome) },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "Admin",
-                            fontFamily = colfiFont,
-                            fontSize = 10.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    OutlinedButton(
-                        onClick = { viewModel.loginWithDemo("jenny", onNavigateToHome) },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "Jenny",
-                            fontFamily = colfiFont,
-                            fontSize = 10.sp
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Add registration hint
-        TextButton(
-            onClick = { onNavigateToSignUp }
+            horizontalArrangement = Arrangement.End // Align to the right
         ) {
             Text(
-                text = "Don't have an account? Sign up",
+                text = "Continue as Guest",
+                color = DarkBrown1,
                 fontFamily = colfiFont,
-                fontSize = 12.sp,
-                color = LightBrown1
+                fontSize = 14.sp,
+                textDecoration = TextDecoration.Underline, // underline
+                modifier = Modifier.clickable {
+                    viewModel.loginAsGuest()
+                }
             )
         }
+
+        // Register Button
+        TextButton(onClick = onNavigateToRegister) {
+            Text("Don't have an account? Register",
+                color = DarkBrown1,
+                fontFamily = colfiFont,
+                fontSize = 14.sp
+                )
+        }
+
+        // Display error message if it exists
+        if (uiState.errorMessage.isNotEmpty()) {
+            Text(
+                text = uiState.errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+
     }
 }

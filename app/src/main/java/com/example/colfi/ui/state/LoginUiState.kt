@@ -7,5 +7,6 @@ data class LoginUiState(
     val passwordVisible: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String = "",
-    val isLoginSuccessful: Boolean = false
+    val isLoginSuccessful: Boolean = false,
+    val loggedInUserName: String? = null
 )

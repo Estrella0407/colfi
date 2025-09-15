@@ -1,13 +1,15 @@
-// LoginViewModel.kt
 package com.example.colfi.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.colfi.data.repository.AuthRepository
 import com.example.colfi.ui.state.LoginUiState
+import com.google.firebase.firestore.auth.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class LoginViewModel(
@@ -17,90 +19,92 @@ class LoginViewModel(
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
-    // Update to handle email instead of username for Firebase
-    fun updateUsername(email: String) {
-        _uiState.value = _uiState.value.copy(
-            username = email, // This will now store the email
-            errorMessage = ""
-        )
+    fun updateUsername(username: String) {
+        _uiState.update { it.copy(username = username, errorMessage = "") }
     }
 
     fun updatePassword(password: String) {
-        _uiState.value = _uiState.value.copy(
-            password = password,
-            errorMessage = ""
-        )
+        _uiState.update { it.copy(password = password, errorMessage = "") }
     }
 
     fun togglePasswordVisibility() {
-        _uiState.value = _uiState.value.copy(
-            passwordVisible = !_uiState.value.passwordVisible
-        )
+        _uiState.update { it.copy(passwordVisible = !it.passwordVisible) }
     }
 
-    fun login(onSuccess: (String) -> Unit) {
+    /**
+     * Attempts to log in using the provided username and password via Firebase.
+     * The result of the login attempt (success or failure) is reflected in the uiState.
+     */
+    fun login() {
         val currentState = _uiState.value
-        if (currentState.username.isEmpty() || currentState.password.isEmpty()) {
-            _uiState.value = currentState.copy(errorMessage = "Please fill in all fields")
+        if (currentState.username.isBlank() || currentState.password.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Please fill in all fields") }
             return
         }
 
-        // Basic email validation
-        if (!isValidEmail(currentState.username)) {
-            _uiState.value = currentState.copy(errorMessage = "Please enter a valid email address")
-            return
-        }
-
-        _uiState.value = currentState.copy(isLoading = true, errorMessage = "")
+        // Set loading state and clear previous errors/success flags
+        _uiState.update { it.copy(isLoading = true, errorMessage = "", isLoginSuccessful = false) }
 
         viewModelScope.launch {
-            // Use email and password for Firebase authentication
-            authRepository.login(currentState.username, currentState.password)
-                .onSuccess { user ->
-                    _uiState.value = currentState.copy(
+            val result = authRepository.login(currentState.username, currentState.password)
+
+            result.onSuccess { user ->
+                // On success, update the state with the user's name and success flag
+                _uiState.update {
+                    it.copy(
                         isLoading = false,
-                        isLoginSuccessful = true
-                    )
-                    onSuccess(user.username) // Pass username for navigation
-                }
-                .onFailure { exception ->
-                    _uiState.value = currentState.copy(
-                        isLoading = false,
-                        errorMessage = getFirebaseErrorMessage(exception.message)
+                        isLoginSuccessful = true,
+                        loggedInUserName = user.displayName // Store the user's name on success
                     )
                 }
+            }.onFailure { exception ->
+                // On failure, update the state with the error message
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = exception.message ?: "Invalid username or password"
+                    )
+                }
+            }
         }
     }
 
-    fun loginAsGuest(onSuccess: (String) -> Unit) {
-        val guestUser = authRepository.getGuestUser()
-        onSuccess(guestUser.displayName)
+    /**
+     * Resets the login success flag. This should be called by the UI after it has
+     * handled the navigation, to prevent re-triggering navigation on configuration changes.
+     */
+    fun onLoginHandled() {
+        _uiState.update { it.copy(isLoginSuccessful = false, loggedInUserName = null) }
     }
 
-    // For demo purposes - create demo accounts in Firebase
-    fun loginWithDemo(username: String, onSuccess: (String) -> Unit) {
-        val demoCredentials = mapOf(
-            "admin" to "admin@colfi.com",
-            "jenny" to "jenny@colfi.com"
-        )
+    // --- NEW FUNCTION FOR TRUE ANONYMOUS LOGIN ---
+    fun loginAsGuest() {
+        // 1. Set loading state and clear previous errors
+        _uiState.update { it.copy(isLoading = true, errorMessage = "", isLoginSuccessful = false) }
 
-        val email = demoCredentials[username]
-        if (email != null) {
-            _uiState.value = _uiState.value.copy(username = email, password = "123456")
-            login(onSuccess)
-        }
-    }
+        viewModelScope.launch {
+            // 2. The ViewModel CALLS the new repository function
+            val result = authRepository.loginAsGuest()
 
-    private fun isValidEmail(email: String): Boolean {
-        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-    }
-
-    private fun getFirebaseErrorMessage(error: String?): String {
-        return when {
-            error?.contains("password") == true -> "Invalid email or password"
-            error?.contains("network") == true -> "Network error. Please check your connection"
-            error?.contains("user") == true -> "No account found with this email"
-            else -> error ?: "Login failed. Please try again"
+            // 3. Handle the result from the repository
+            result.onSuccess { guestUser ->
+                // On success, update the UI state to trigger navigation
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        isLoginSuccessful = true,
+                        loggedInUserName = guestUser.displayName // Will be "Guest"
+                    )
+                }
+            }.onFailure { exception ->
+                // On failure, update the UI state with an error message
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = exception.message ?: "Could not sign in as guest."
+                    )
+                }
+            }
         }
     }
 }

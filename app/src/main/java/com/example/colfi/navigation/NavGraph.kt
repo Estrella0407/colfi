@@ -1,7 +1,9 @@
+// NavGraph.kt
 package com.example.colfi.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -56,22 +58,33 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
+        // 🔹 Login
         composable(Screen.Login.route) {
             val viewModel: LoginViewModel = viewModel()
             LoginScreen(
                 onNavigateToHome = { userName ->
                     navController.navigate(Screen.CustomerHome.createRoute(userName)) {
-                        launchSingleTop = true
-                        restoreState = true
+                        popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
-                onNavigateToSignUp = {
-                    navController.navigate(Screen.SignUp.route) {
-                        launchSingleTop = true
-                        restoreState = true
+                onNavigateAsGuest = {
+                    // This is for the "Continue as Guest" button.
+                    navController.navigate(Screen.CustomerHome.createRoute("Guest")) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
-                viewModel = viewModel
+                onNavigateToRegister = {
+                    navController.navigate(Screen.Register.route)
+                }
+            )
+        }
+
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                // This allows the user to go back to the login screen after registering or by pressing a back button
+                onNavigateBackToLogin = {
+                    navController.popBackStack()
+                }
             )
         }
 
@@ -101,6 +114,18 @@ fun NavGraph(navController: NavHostController) {
                         restoreState = true
                     }
                 },
+                onNavigateToDineIn = {
+                    navController.navigate(Screen.DineIn.createRoute(userName))
+                },
+                onNavigateToPickUp = {
+                    navController.navigate(Screen.PickUp.createRoute(userName))
+                },
+                onNavigateToDelivery = {
+                    navController.navigate(Screen.Delivery.createRoute(userName))
+                },
+                onNavigateToWallet = {
+                    navController.navigate(Screen.Wallet.createRoute(userName))
+                },
                 viewModel = viewModel
             )
         }
@@ -126,6 +151,7 @@ fun NavGraph(navController: NavHostController) {
                 cartViewModel = cartViewModel,
                 onNavigateToHome = {
                     navController.navigate(Screen.CustomerHome.createRoute(userName)) {
+                        popUpTo(Screen.CustomerHome.route) { inclusive = false }
                         launchSingleTop = true
                         restoreState = true
                     }
@@ -239,5 +265,59 @@ fun NavGraph(navController: NavHostController) {
                 }
             )
         }
+
+        composable(
+            route = Screen.PickUp.route,
+            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
+            val viewModel: PickUpViewModel = viewModel()
+
+            PickUpScreen(
+                userName = userName,
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() },
+                onOrderNow = {
+                    navController.navigate(Screen.Orders.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Screen.Delivery.route,
+            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
+            val viewModel: DeliveryViewModel = viewModel()
+
+            DeliveryScreen(
+                userName = userName,
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() },
+                onOrderNow = {
+                    navController.navigate(Screen.Orders.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Screen.Wallet.route,
+            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
+            val viewModel: WalletViewModel = viewModel()
+
+            WalletScreen(
+                userName = userName,
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
     }
 }
+
+

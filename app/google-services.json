@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "849232115000-karc54ueib4d5dulog5voh65m48h3ec7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.colfi",
+            "certificate_hash": "a1e03f463266d0a847b315346f52a9697d738030"
+          }
+        },
+        {
+          "client_id": "849232115000-rp6ukf799imqd57h9n6bo2ojd71cn5un.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.colfi",
+            "certificate_hash": "a12a3d21e618fff7103edfd2f42639e10bfb7365"
+          }
+        },
+        {
           "client_id": "849232115000-s59ribs8sqh9marqs68floft50nftvvi.apps.googleusercontent.com",
           "client_type": 3
         }
