@@ -16,7 +16,31 @@ class AuthRepository {
 
     fun getCurrentUser(): FirebaseUser? = auth.currentUser
 
-    // --- NEW FUNCTION FOR TRUE ANONYMOUS LOGIN ---
+    // Function to check if a user is logged in via Firebase Auth
+    fun isUserLoggedIn(): Boolean {
+        return auth.currentUser != null
+    }
+
+    suspend fun getCurrentCustomUser(): Result<User> {
+        val firebaseUser = auth.currentUser
+        return if (firebaseUser != null) {
+            try {
+                val documentSnapshot = usersCollection.document(firebaseUser.uid).get().await()
+                val customUser = documentSnapshot.toObject(User::class.java)
+                if (customUser != null) {
+                    Result.success(customUser)
+                } else {
+                    Result.failure(Exception("User data not found in Firestore."))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        } else {
+            Result.failure(Exception("No user logged in."))
+        }
+    }
+
+    // Function for anonymous login
     suspend fun loginAsGuest(): Result<User> {
         return try {
             // 1. Sign in anonymously with Firebase Authentication.

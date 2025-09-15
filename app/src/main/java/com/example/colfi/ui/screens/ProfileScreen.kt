@@ -1,5 +1,6 @@
 package com.example.colfi.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -7,8 +8,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.ProfileViewModel
 
@@ -28,7 +33,9 @@ fun ProfileScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .statusBarsPadding()
+            .navigationBarsPadding() // Ensure navigation bar padding is applied
+            .background(LightCream1)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -37,8 +44,10 @@ fun ProfileScreen(
         ) {
             Text(
                 text = "Profile",
-                style = MaterialTheme.typography.headlineMedium,
-                fontFamily = colfiFont
+                fontFamily = colfiFont,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
             )
 
             Spacer(modifier = Modifier.height(32.dp))

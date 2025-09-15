@@ -4,6 +4,7 @@ package com.example.colfi.navigation
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -39,26 +40,6 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        composable(Screen.SignUp.route) {
-            val viewModel: SignUpViewModel = viewModel()
-            SignUpScreen(
-                onNavigateToHome = { userName ->
-                    navController.navigate(Screen.CustomerHome.createRoute(userName)) {
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onNavigateToLogin = {
-                    navController.navigate(Screen.Login.route) {
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                viewModel = viewModel
-            )
-        }
-
-        // 🔹 Login
         composable(Screen.Login.route) {
             val viewModel: LoginViewModel = viewModel()
             LoginScreen(

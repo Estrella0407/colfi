@@ -1,6 +1,7 @@
 // LoadingViewModel.kt
 package com.example.colfi.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.colfi.data.repository.AuthRepository
@@ -37,7 +38,10 @@ class LoadingViewModel : ViewModel() {
 
     // Overloaded function to maintain backward compatibility
     fun startLoading(onComplete: () -> Unit) {
-        startLoading(onComplete) { }
+        startLoading(
+            onNavigateToLogin = onComplete,
+            onNavigateToHome = { _ -> /* Decide what to do if home navigation needs a username here */ }
+        )
     }
 
     private suspend fun checkAuthState(
@@ -45,13 +49,20 @@ class LoadingViewModel : ViewModel() {
         onUserNotLoggedIn: () -> Unit
     ) {
         if (authRepository.isUserLoggedIn()) {
-            val user = authRepository.getCurrentUser()
-            if (user != null) {
-                onUserLoggedIn(user.username)
-            } else {
-                onUserNotLoggedIn()
-            }
+            val customUserResult = authRepository.getCurrentCustomUser()
+            customUserResult.fold(
+                onSuccess = { customUser ->
+                    _uiState.value = _uiState.value.copy(isComplete = true)
+                    onUserLoggedIn(customUser.username) // Use username from your User model
+                },
+                onFailure = { exception ->
+                    Log.e("LoadingViewModel", "Failed to get custom user data: ${exception.message}")
+                    _uiState.value = _uiState.value.copy(isComplete = true)
+                    onUserNotLoggedIn() // Fallback to not logged in if custom data fails
+                }
+            )
         } else {
+            _uiState.value = _uiState.value.copy(isComplete = true)
             onUserNotLoggedIn()
         }
     }

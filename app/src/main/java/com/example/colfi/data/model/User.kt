@@ -2,10 +2,10 @@
 package com.example.colfi.data.model
 
 data class User(
-    val username: String,
-    val displayName: String,
+    val username: String = "",
+    val displayName: String = "",
     val email: String = "",
-    val walletBalance: Double = 150.55,
-    val points: Int = 721,
-    val vouchers: Int = 1
-)
+    val walletBalance: Double = 0.0,
+    val points: Int = 0,
+    val vouchers: Int = 0
+    )

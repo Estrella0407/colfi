@@ -6,6 +6,7 @@ import com.example.colfi.data.model.User
 import com.example.colfi.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
@@ -13,13 +14,13 @@ class ProfileViewModel(
 ) : ViewModel() {
 
     private val _user = MutableStateFlow<User?>(null)
-    val user: StateFlow<User?> = _user
+    val user: StateFlow<User?> = _user.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     init {
         loadUser()
@@ -28,20 +29,26 @@ class ProfileViewModel(
     fun loadUser() {
         viewModelScope.launch {
             _isLoading.value = true
-            try {
-                val currentUser = authRepository.getCurrentUser()
-                _user.value = currentUser
-                _errorMessage.value = null
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Failed to load user"
-            } finally {
-                _isLoading.value = false
-            }
+            _errorMessage.value = null // Clear previous errors
+
+            val result = authRepository.getCurrentCustomUser() // Call the correct function
+
+            result.fold(
+                onSuccess = { customUser ->
+                    _user.value = customUser
+                },
+                onFailure = { exception ->
+                    _errorMessage.value = exception.message ?: "Failed to load user profile"
+                    _user.value = null // Optionally clear user data on failure
+                }
+            )
+            _isLoading.value = false // Set loading to false after completion or error
         }
     }
 
     fun logout(onNavigateToLogin: () -> Unit) {
-        authRepository.logout()
+        authRepository.logoutUser()
+        _user.value = null // Clear user data on logout
         onNavigateToLogin()
     }
 }
