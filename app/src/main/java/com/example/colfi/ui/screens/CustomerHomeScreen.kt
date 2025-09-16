@@ -20,7 +20,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.R
 import com.example.colfi.data.model.User
 import com.example.colfi.ui.theme.DarkBrown1
-import com.example.colfi.ui.theme.LightBrown1
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.HomeViewModel
@@ -377,7 +376,7 @@ fun BottomNavigation(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             BottomNavItem(
-                iconRes = R.drawable.homepage_icon, // Replace with actual home icon resource
+                iconRes = R.drawable.homepage_icon,
                 label = "Home",
                 isSelected = isHomeSelected,
                 onClick = onHomeClick

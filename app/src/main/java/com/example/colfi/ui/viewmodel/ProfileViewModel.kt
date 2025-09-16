@@ -31,11 +31,11 @@ class ProfileViewModel(
             _isLoading.value = true
             _errorMessage.value = null // Clear previous errors
 
-            val result = authRepository.getCurrentCustomUser() // Call the correct function
+            val result = authRepository.getCurrentUser() // Call the correct function
 
             result.fold(
-                onSuccess = { customUser ->
-                    _user.value = customUser
+                onSuccess = { currentUser ->
+                    _user.value = currentUser
                 },
                 onFailure = { exception ->
                     _errorMessage.value = exception.message ?: "Failed to load user profile"

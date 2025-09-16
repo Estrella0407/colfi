@@ -4,7 +4,6 @@ package com.example.colfi.data.repository
 import android.util.Log
 import com.example.colfi.data.model.User
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
@@ -14,21 +13,19 @@ class AuthRepository {
     private val db = FirebaseFirestore.getInstance()
     private val usersCollection = db.collection("users")
 
-    fun getCurrentUser(): FirebaseUser? = auth.currentUser
-
     // Function to check if a user is logged in via Firebase Auth
     fun isUserLoggedIn(): Boolean {
         return auth.currentUser != null
     }
 
-    suspend fun getCurrentCustomUser(): Result<User> {
+    suspend fun getCurrentUser(): Result<User> {
         val firebaseUser = auth.currentUser
         return if (firebaseUser != null) {
             try {
                 val documentSnapshot = usersCollection.document(firebaseUser.uid).get().await()
-                val customUser = documentSnapshot.toObject(User::class.java)
-                if (customUser != null) {
-                    Result.success(customUser)
+                val currentUser = documentSnapshot.toObject(User::class.java)
+                if (currentUser != null) {
+                    Result.success(currentUser)
                 } else {
                     Result.failure(Exception("User data not found in Firestore."))
                 }

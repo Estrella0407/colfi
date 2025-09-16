@@ -49,11 +49,11 @@ class LoadingViewModel : ViewModel() {
         onUserNotLoggedIn: () -> Unit
     ) {
         if (authRepository.isUserLoggedIn()) {
-            val customUserResult = authRepository.getCurrentCustomUser()
+            val customUserResult = authRepository.getCurrentUser()
             customUserResult.fold(
-                onSuccess = { customUser ->
+                onSuccess = { currentUser ->
                     _uiState.value = _uiState.value.copy(isComplete = true)
-                    onUserLoggedIn(customUser.username) // Use username from your User model
+                    onUserLoggedIn(currentUser.username) // Use username from your User model
                 },
                 onFailure = { exception ->
                     Log.e("LoadingViewModel", "Failed to get custom user data: ${exception.message}")
