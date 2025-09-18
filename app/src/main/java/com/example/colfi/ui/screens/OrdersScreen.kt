@@ -175,31 +175,6 @@ fun OrderHeader(
 }
 
 @Composable
-fun TabButton(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(40.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) LightBrown2 else Color.Gray.copy(alpha = 0.3f)
-        ),
-        shape = RoundedCornerShape(20.dp)
-    ) {
-        Text(
-            text = text,
-            fontFamily = colfiFont,
-            fontSize = 14.sp,
-            color = Color.Black,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-        )
-    }
-}
-
-@Composable
 fun OrdersList(
     orders: List<OrderHistory>,
     isCurrentOrder: Boolean,
@@ -253,7 +228,7 @@ fun OrderCard(
                 )
 
                 Text(
-                    text = formatTime(order.orderDate),
+                    text = formatTime(order.orderDate.toString()),
                     fontFamily = colfiFont,
                     fontSize = 14.sp,
                     color = Color.Gray
@@ -377,7 +352,7 @@ fun OrderCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "RM ${String.format("%.2f", order.orderTotal)}",
+                        text = "RM ${String.format("%.2f", order.totalAmount)}",
                         fontFamily = colfiFont,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,

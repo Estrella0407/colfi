@@ -54,7 +54,8 @@ class LoginViewModel(
                     it.copy(
                         isLoading = false,
                         isLoginSuccessful = true,
-                        loggedInUserName = user.displayName // Store the user's name on success
+                        loggedInUserName = user.displayName, // Store the user's name on success
+                        loggedInUserRole = user.role // Store the user's role on success
                     )
                 }
             }.onFailure { exception ->
@@ -74,13 +75,22 @@ class LoginViewModel(
      * handled the navigation, to prevent re-triggering navigation on configuration changes.
      */
     fun onLoginHandled() {
-        _uiState.update { it.copy(isLoginSuccessful = false, loggedInUserName = null) }
+        _uiState.update { it.copy(
+            isLoginSuccessful = false,
+            loggedInUserName = null,
+            loggedInUserRole = null
+        ) }
     }
 
     // --- NEW FUNCTION FOR TRUE ANONYMOUS LOGIN ---
     fun loginAsGuest() {
         // 1. Set loading state and clear previous errors
-        _uiState.update { it.copy(isLoading = true, errorMessage = "", isLoginSuccessful = false) }
+        _uiState.update { it.copy(
+            isLoading = true,
+            errorMessage = "",
+            isLoginSuccessful = false,
+            loggedInUserRole = "guest"
+        ) }
 
         viewModelScope.launch {
             // 2. The ViewModel CALLS the new repository function

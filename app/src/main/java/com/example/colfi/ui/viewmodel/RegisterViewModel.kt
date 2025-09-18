@@ -34,6 +34,11 @@ class RegisterViewModel(
         _uiState.value = _uiState.value.copy(confirmPassword = newConfirmPassword)
     }
 
+    // Add method to set role
+    fun setRole(role: String) {
+        _uiState.value = _uiState.value.copy(role = role)
+    }
+
     fun togglePasswordVisibility() {
         _uiState.value = _uiState.value.copy(
             isPasswordVisible = !_uiState.value.isPasswordVisible
@@ -56,6 +61,11 @@ class RegisterViewModel(
             return
         }
 
+        if (state.role.isBlank()) {
+            _uiState.value = state.copy(errorMessage = "Role must be selected")
+            return
+        }
+
         if (state.password != state.confirmPassword) {
             _uiState.value = state.copy(errorMessage = "Passwords do not match")
             return
@@ -68,7 +78,8 @@ class RegisterViewModel(
                 username = state.username,
                 email = state.email,
                 password = state.password,
-                displayName = state.username
+                displayName = state.username,
+                role = state.role // Pass role to repository
             )
 
             _uiState.value = if (result.isSuccess) {
@@ -92,14 +103,4 @@ class RegisterViewModel(
             successMessage = null
         )
     }
-/*
-
-    var rememberMe by mutableStateOf(false)
-        private set
-
-    fun toggleRememberMe() {
-        rememberMe = !rememberMe
-    }
-*/
-
 }

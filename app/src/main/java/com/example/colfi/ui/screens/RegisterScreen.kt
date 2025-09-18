@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -27,11 +28,17 @@ import com.example.colfi.ui.theme.colfiFont
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
+    role: String, // Accept role as parameter
     viewModel: RegisterViewModel = viewModel(),
     onNavigateBackToLogin: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
+
+    // Set the role when the screen is first composed
+    LaunchedEffect(role) {
+        viewModel.setRole(role)
+    }
 
     Column(
         modifier = Modifier
@@ -45,6 +52,15 @@ fun RegisterScreen(
             fontFamily = colfiFont,
             style = MaterialTheme.typography.headlineMedium,
             color = DarkBrown1
+        )
+
+        // Show selected role
+        Text(
+            "Role: ${role.replaceFirstChar { it.uppercase() }}",
+            fontFamily = colfiFont,
+            style = MaterialTheme.typography.bodyMedium,
+            color = DarkBrown1,
+            modifier = Modifier.padding(vertical = 8.dp)
         )
 
         Spacer(modifier = Modifier.height(16.dp))

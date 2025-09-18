@@ -44,20 +44,13 @@ val colfiFont = FontFamily(Font(R.font.colfifont))
 
 @Composable
 fun ColfiTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false, // Always use light theme
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // Disable dynamic colors to ensure consistent theming
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    // Always use LightColorScheme regardless of system theme or dynamic colors
+    val colorScheme = LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

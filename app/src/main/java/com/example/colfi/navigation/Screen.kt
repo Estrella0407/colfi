@@ -3,12 +3,17 @@ package com.example.colfi.navigation
 
 sealed class Screen(val route: String) {
     object Loading : Screen("loading")
-    object Register : Screen("register/{user_name}"){
-        fun createRoute(userName: String) = "register/$userName"
-    }
     object Login : Screen("login")
+    object RoleSelection : Screen("role_selection/{is_for_registration}") {
+        fun createRoute(isForRegistration: Boolean): String = "role_selection/$isForRegistration"
+    }
+    object Register : Screen("register/{role}") {
+        fun createRoute(role: String): String = "register/$role"
+    }
     object CustomerHome : Screen("customer_home/{user_name}") {
-        fun createRoute(userName: String) = "customer_home/$userName"
+        fun createRoute(userName: String): String {
+            return "customer_home/$userName"
+        }
     }
     object Menu : Screen("menu/{user_name}") {
         fun createRoute(userName: String) = "menu/$userName"
@@ -19,12 +24,8 @@ sealed class Screen(val route: String) {
     object Profile : Screen("profile/{user_name}") {
         fun createRoute(userName: String) = "profile/$userName"
     }
-
     object Cart : Screen("cart/{user_name}") {
         fun createRoute(userName: String) = "cart/$userName"
-    }
-    object ItemDetail : Screen("itemDetail/{item_id}") {
-        fun createRoute(itemId: String) = "itemDetail/$itemId"
     }
     object DineIn : Screen("dinein/{user_name}") {
         fun createRoute(userName: String) = "dinein/$userName"
@@ -40,5 +41,8 @@ sealed class Screen(val route: String) {
     }
     object Checkout : Screen("checkout/{user_name}") {
         fun createRoute(userName: String) = "checkout/$userName"
+    }
+    object StaffOrders : Screen("staff_orders/{user_name}") {
+        fun createRoute(userName: String) = "staff_orders/$userName"
     }
 }

@@ -6,6 +6,7 @@ import com.example.colfi.data.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import kotlin.io.path.exists
 
 class AuthRepository {
 
@@ -48,7 +49,8 @@ class AuthRepository {
             val guestUser = User(
                 username = "guest_${firebaseUser.uid.take(6)}", // Creates a unique guest username like "guest_aB1cD2"
                 displayName = "Guest",
-                email = "" // Anonymous users do not have an email.
+                email = "", // Anonymous users do not have an email.
+                role = "guest" // Set role as guest
             )
 
             // 3. Save this guest's data to Firestore. This is crucial for guests to have persistent data (like a shopping cart).
@@ -107,6 +109,7 @@ class AuthRepository {
         email: String,
         password: String,
         displayName: String,
+        role: String,
         balance: Double = 0.0,
         points: Int = 0,
         tier: Int = 0
@@ -115,14 +118,15 @@ class AuthRepository {
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
             val firebaseUser = authResult.user ?: throw Exception("User creation failed")
 
-            // Save both username and email in Firestore
+            // Save user data including role in Firestore
             val newUser = User(
                 username = username,
                 displayName = displayName,
-                email = email, // <<< SAVE THE EMAIL
+                email = email,
                 walletBalance = balance,
                 points = points,
-                vouchers = 0
+                vouchers = 0,
+                role = role
             )
 
             usersCollection.document(firebaseUser.uid).set(newUser).await()
@@ -133,8 +137,6 @@ class AuthRepository {
             Result.failure(e)
         }
     }
-
-
 
     // Logout
     fun logoutUser() {
@@ -147,8 +149,8 @@ class AuthRepository {
         return User(
             username = "guest",
             displayName = "Guest",
-            walletBalance = 0.0
-
+            walletBalance = 0.0,
+            role = "guest"
         )
     }
 }

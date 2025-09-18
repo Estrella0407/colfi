@@ -25,7 +25,7 @@ import com.example.colfi.ui.viewmodel.LoginViewModel
 
 @Composable
 fun LoginScreen(
-    onNavigateToHome: (String) -> Unit,
+    onNavigateToHome: (String, String) -> Unit,
     onNavigateAsGuest: () -> Unit, // Guest navigation parameter
     onNavigateToRegister: () -> Unit,
     viewModel: LoginViewModel = viewModel()
@@ -34,12 +34,9 @@ fun LoginScreen(
 
     // LaunchedEffect for navigation ---
     // This block observes the login state and navigates automatically on success.
-    LaunchedEffect(uiState.isLoginSuccessful, uiState.loggedInUserName) {
-        // When isLoginSuccessful becomes true and we have a username...
-        if (uiState.isLoginSuccessful && uiState.loggedInUserName != null) {
-            // ...navigate to the home screen...
-            onNavigateToHome(uiState.loggedInUserName!!)
-            // ...and immediately tell the ViewModel the navigation has been handled.
+    LaunchedEffect(uiState.isLoginSuccessful, uiState.loggedInUserName, uiState.loggedInUserRole) {
+        if (uiState.isLoginSuccessful && uiState.loggedInUserName != null && uiState.loggedInUserRole != null) {
+            onNavigateToHome(uiState.loggedInUserName!!, uiState.loggedInUserRole!!)
             viewModel.onLoginHandled()
         }
     }

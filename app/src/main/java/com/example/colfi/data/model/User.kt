@@ -7,5 +7,6 @@ data class User(
     val email: String = "",
     val walletBalance: Double = 0.0,
     val points: Int = 0,
-    val vouchers: Int = 0
+    val vouchers: Int = 0,
+    val role: String = ""
     )

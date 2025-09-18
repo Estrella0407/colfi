@@ -43,28 +43,54 @@ fun NavGraph(navController: NavHostController) {
         composable(Screen.Login.route) {
             val viewModel: LoginViewModel = viewModel()
             LoginScreen(
-                onNavigateToHome = { userName ->
-                    navController.navigate(Screen.CustomerHome.createRoute(userName)) {
+                onNavigateToHome = { userName, role ->
+                    val destination = if (role == "customer") {
+                        Screen.CustomerHome.createRoute(userName)
+                    } else if (role == "staff") {
+                        Screen.StaffOrders.createRoute(userName)
+                    } else {
+                        // Handle other roles or default case
+                        Screen.CustomerHome.createRoute(userName)
+                    }
+
+                    navController.navigate(destination) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
                 onNavigateAsGuest = {
-                    // This is for the "Continue as Guest" button.
-                    navController.navigate(Screen.CustomerHome.createRoute("Guest")) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
-                    }
+                    navController.navigate(Screen.CustomerHome.route)
                 },
                 onNavigateToRegister = {
-                    navController.navigate(Screen.Register.route)
+                    navController.navigate(Screen.RoleSelection.createRoute(isForRegistration = true))
+                },
+                viewModel = viewModel
+            )
+        }
+
+        composable(
+            route = Screen.RoleSelection.route,
+            arguments = listOf(navArgument("is_for_registration") { type = NavType.BoolType })
+        ) { backStackEntry ->
+            val isForRegistrationArg = backStackEntry.arguments?.getBoolean("is_for_registration") ?: false // Default to false or true as appropriate
+
+            RoleSelectionScreen(
+                isForRegistration = isForRegistrationArg,
+                onRegisterWithRole = { selectedRole ->
+                    navController.navigate(Screen.Register.createRoute(selectedRole))
                 }
             )
         }
 
-        composable(Screen.Register.route) {
+        composable(Screen.Register.route,
+            arguments = listOf(navArgument("role") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val role = backStackEntry.arguments?.getString("role") ?: "customer"
             RegisterScreen(
-                // This allows the user to go back to the login screen after registering or by pressing a back button
+                role = role,
                 onNavigateBackToLogin = {
-                    navController.popBackStack()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                    }
                 }
             )
         }
@@ -296,6 +322,25 @@ fun NavGraph(navController: NavHostController) {
                 userName = userName,
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.StaffOrders.route,
+            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+            ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
+            val viewModel: StaffOrdersViewModel = viewModel()
+            StaffOrdersScreen(
+                userName = userName,
+                viewModel = viewModel,
+                onNavigateToProducts = { },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.Profile.createRoute(userName)) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
             )
         }
     }
