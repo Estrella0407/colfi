@@ -1,6 +1,7 @@
 package com.example.colfi.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.example.colfi.data.model.CartItem
 import com.example.colfi.ui.state.DeliveryUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,16 +28,17 @@ class DeliveryViewModel : ViewModel() {
     }
 
     // Recalculate totals if needed
-    fun updateTotals(price: Double) {
-        val tax = price * 0.06
-        val fee = 5.0
-        val total = price + tax + fee
+    fun updateTotals(cartItems: List<CartItem>) {
+        val subtotal: Double = cartItems.sumOf { cartItem ->
+            cartItem.totalPrice
+        }
+        val tax = subtotal * 0.06
+        val total = subtotal + tax
         _uiState.update {
             it.copy(
-                subtotal = price,
+                subtotal = subtotal,
                 serviceTax = tax,
-                netTotal = total,
-                deliveryFee = fee
+                netTotal = total
             )
         }
     }

@@ -48,14 +48,15 @@ class LoginViewModel(
         viewModelScope.launch {
             val result = authRepository.login(currentState.username, currentState.password)
 
-            result.onSuccess { user ->
+            result.onSuccess { loginResultPair ->
+                val loggedInCustomUser = loginResultPair.second
                 // On success, update the state with the user's name and success flag
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         isLoginSuccessful = true,
-                        loggedInUserName = user.displayName, // Store the user's name on success
-                        loggedInUserRole = user.role // Store the user's role on success
+                        loggedInUserName = loggedInCustomUser.displayName // Store the user's name on success
+                        //loggedInUserRole = user.role // Store the user's role on success
                     )
                 }
             }.onFailure { exception ->
@@ -78,18 +79,17 @@ class LoginViewModel(
         _uiState.update { it.copy(
             isLoginSuccessful = false,
             loggedInUserName = null,
-            loggedInUserRole = null
+            //loggedInUserRole = null
         ) }
     }
 
-    // --- NEW FUNCTION FOR TRUE ANONYMOUS LOGIN ---
     fun loginAsGuest() {
         // 1. Set loading state and clear previous errors
         _uiState.update { it.copy(
             isLoading = true,
             errorMessage = "",
             isLoginSuccessful = false,
-            loggedInUserRole = "guest"
+            //loggedInUserRole = "guest"
         ) }
 
         viewModelScope.launch {
@@ -97,13 +97,14 @@ class LoginViewModel(
             val result = authRepository.loginAsGuest()
 
             // 3. Handle the result from the repository
-            result.onSuccess { guestUser ->
+            result.onSuccess {guestResultPair ->
+                val guestCustomUser = guestResultPair.second
                 // On success, update the UI state to trigger navigation
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         isLoginSuccessful = true,
-                        loggedInUserName = guestUser.displayName // Will be "Guest"
+                        loggedInUserName = guestCustomUser.displayName // Will be "Guest"
                     )
                 }
             }.onFailure { exception ->

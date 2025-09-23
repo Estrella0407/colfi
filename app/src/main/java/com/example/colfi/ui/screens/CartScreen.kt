@@ -1,6 +1,7 @@
 // CartScreen.kt
 package com.example.colfi.ui.screens
 
+import CheckoutViewModelFactory
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,13 +19,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.data.model.CartItem
 import com.example.colfi.ui.viewmodel.CartViewModel
+import com.example.colfi.ui.viewmodel.CheckoutViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
     cartViewModel: CartViewModel = viewModel(),
     onNavigateBack: () -> Unit,
-    onProceedToCheckout: () -> Unit,
+    onProceedToPickup: () -> Unit,
+    onProceedToDelivery: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by cartViewModel.uiState.collectAsState()
@@ -89,8 +92,10 @@ fun CartScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
+                        var showCheckout by remember { mutableStateOf(false) }
+
                         Button(
-                            onClick = onProceedToCheckout,
+                            onClick = { showCheckout = true },
                             modifier = Modifier.fillMaxWidth(),
                             contentPadding = PaddingValues(vertical = 16.dp)
                         ) {
@@ -99,6 +104,27 @@ fun CartScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                         }
+
+                        if (showCheckout) {
+                            val checkoutViewModel: CheckoutViewModel = viewModel(
+                                factory = CheckoutViewModelFactory(cartViewModel.cartRepository)
+                            )
+
+                            CheckoutPopUp(
+                                cartItems = uiState.cartItems,
+                                checkoutViewModel = checkoutViewModel,
+                                onDismiss = { showCheckout = false },
+                                onNavigateToPickup = {
+                                    showCheckout = false
+                                    onProceedToPickup()
+                                },
+                                onNavigateToDelivery = {
+                                    showCheckout = false
+                                    onProceedToDelivery()
+                                }
+                            )
+                        }
+
                     }
                 }
             }
@@ -151,7 +177,7 @@ fun CartScreen(
                     ) {
                         items(
                             items = uiState.cartItems,
-                            key = { "${it.menuItem.id}_${it.options}" }
+                            key = { it.menuItem.id }
                         ) { cartItem ->
                             CartItemCard(
                                 cartItem = cartItem,
@@ -234,16 +260,6 @@ fun CartItemCard(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
-
-                    // Show selected options
-                    if (cartItem.options.isNotEmpty()) {
-                        Text(
-                            text = cartItem.options,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
 
                     Text(
                         text = "RM ${String.format("%.2f", cartItem.menuItem.price)} each",

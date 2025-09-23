@@ -14,17 +14,9 @@ data class CartItemEntity(
     val menuItemPrice: Double,
     val menuItemCategory: String,
     val menuItemImageURL: String,
-    val selectedTemperature: String? = null, // "Hot", "Cold", or null
-    val selectedSugarLevel: String? = null,  // "No Sugar", "Less Sugar", "Normal Sugar", "Extra Sugar", or null
     val quantity: Int = 1,
     val dateAdded: Long = System.currentTimeMillis()
 ) {
     val totalPrice: Double
         get() = menuItemPrice * quantity
-
-    val options: String
-        get() = buildString {
-            selectedTemperature?.let { append("$it ") }
-            selectedSugarLevel?.let { append("$it ") }
-        }.trim()
 }

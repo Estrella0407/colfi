@@ -1,4 +1,4 @@
-//Delivery Screen.kt
+// DeliveryScreen.kt
 package com.example.colfi.ui.screens
 
 import androidx.compose.foundation.background
@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -22,312 +21,324 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.colfi.R
-import com.example.colfi.ui.theme.DarkBrown1
-import com.example.colfi.ui.theme.LightBrown1
-import com.example.colfi.ui.theme.LightBrown2
-import com.example.colfi.ui.theme.LightCream1
-import com.example.colfi.ui.theme.colfiFont
-import com.example.colfi.ui.viewmodel.DeliveryViewModel
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.OutlinedTextField
+import com.example.colfi.ui.theme.*
+import com.example.colfi.ui.viewmodel.CartViewModel
+import com.example.colfi.ui.viewmodel.PickUpViewModel
+import kotlinx.coroutines.delay
 import androidx.compose.ui.res.painterResource
-
+import com.example.colfi.ui.viewmodel.DeliveryViewModel
 
 @Composable
 fun DeliveryScreen(
     userName: String,
+    cartViewModel: CartViewModel,
     onBackClick: () -> Unit,
     onOrderNow: () -> Unit,
+    onEditOrderClick: () -> Unit,
     viewModel: DeliveryViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val scrollState = rememberScrollState()
+    val cartUiState by cartViewModel.uiState.collectAsState()
+    val cartItems = cartUiState.cartItems
+
     var showSuccessDialog by remember { mutableStateOf(false) }
     var showAddressPopup by remember { mutableStateOf(false) }
     var showInstructionPopup by remember { mutableStateOf(false) }
     var savedAddresses by remember { mutableStateOf(listOf<String>()) }
 
-    LaunchedEffect(uiState.orderItemPrice) {
-        if (uiState.orderItemPrice > 0) {
-            viewModel.updateTotals(uiState.orderItemPrice)
-        }
+    // Update totals whenever cart changes
+    LaunchedEffect(cartItems) {
+        viewModel.updateTotals(cartItems)
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(LightCream1)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .verticalScroll(scrollState)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            val scrollState = rememberScrollState()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState)
             ) {
-                IconButton(onClick = onBackClick) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                }
-                Text(
-                    text = "— COLFi —",
-                    fontFamily = colfiFont,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Delivery Address Section
-            Text(
-                text = "Delivery Address",
-                fontFamily = colfiFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-
-            if (uiState.customerAddress.isNullOrEmpty()) {
-                Text(
-                    text = "+ Add Address",
-                    fontFamily = colfiFont,
-                    color = DarkBrown1,
-                    modifier = Modifier.clickable { showAddressPopup = true }
-                )
-            } else {
-                Column {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
                     Text(
-                        text = uiState.customerAddress,
+                        text = "— COLFi —",
                         fontFamily = colfiFont,
-                        fontSize = 15.sp,
-                        color = Color.Gray
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Delivery Address
+                Text(
+                    text = "Delivery Address",
+                    fontFamily = colfiFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+
+                if (uiState.customerAddress.isNullOrEmpty()) {
                     Text(
-                        text = "Change Address",
-                        color = Color.Gray,
+                        text = "+ Add Address",
                         fontFamily = colfiFont,
-                        fontSize = 14.sp,
+                        color = DarkBrown1,
                         modifier = Modifier.clickable { showAddressPopup = true }
                     )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Order Section
-            Text(
-                text = "Your Order",
-                fontFamily = colfiFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    AsyncImage(
-                        model = {},
-                        contentDescription = uiState.orderItemName,
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                } else {
                     Column {
                         Text(
-                            text = uiState.orderItemName,
+                            text = uiState.customerAddress,
                             fontFamily = colfiFont,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 15.sp,
+                            color = Color.Gray
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "RM ${String.format("%.2f", uiState.orderItemPrice)}",
+                            text = "Change Address",
+                            color = Color.Gray,
                             fontFamily = colfiFont,
-                            color = Color.Black
+                            fontSize = 14.sp,
+                            modifier = Modifier.clickable { showAddressPopup = true }
                         )
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-
-            Text(
-                text = "Delivery Instruction",
-                fontFamily = colfiFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-
-            if (uiState.deliveryInstruction.isEmpty()) {
-                Text(
-                    text = "+ Add Instruction",
-                    fontFamily = colfiFont,
-                    color = DarkBrown1,
-                    modifier = Modifier.clickable { showInstructionPopup = true }
-                )
-            } else {
-                Column {
-                    Text(
-                        text = uiState.deliveryInstruction,
-                        fontFamily = colfiFont,
-                        fontSize = 15.sp,
-                        color = Color.Gray
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Change Instruction",
-                        color = Color.Gray,
-                        fontFamily = colfiFont,
-                        fontSize = 14.sp,
-                        modifier = Modifier.clickable { showInstructionPopup = true }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Payment Methods
-            Text(
-                text = "Payment Methods",
-                fontFamily = colfiFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-
-            val methods = listOf("Credit Card", "Colfi Wallet", "E-wallet", "Cash")
-            methods.forEach { method ->
+                //Your Order
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clickable { viewModel.selectPaymentMethod(method) }
-                        .padding(vertical = 4.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    RadioButton(
-                        selected = uiState.paymentMethod == method,
-                        onClick = { viewModel.selectPaymentMethod(method) }
-                    )
                     Text(
-                        text = method,
+                        "Your Order",
                         fontFamily = colfiFont,
-                        fontSize = 14.sp
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
                     )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(5.dp))
-
-            // Payment Details
-            Text(
-                text = "Payment Details",
-                fontFamily = colfiFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-
-            Column(modifier = Modifier.fillMaxWidth()) {
-                PaymentDetailRow("Subtotal", "RM ${String.format("%.2f", uiState.subtotal)}")
-                PaymentDetailRow("Service Tax 6%", "RM ${String.format("%.2f", uiState.serviceTax)}")
-                PaymentDetailRow("Net Total", "RM ${String.format("%.2f", uiState.netTotal)}", isBold = true)
-            }
-        }
-
-        // Bottom Order Button
-        Button(
-            onClick = {
-                onOrderNow()
-                showSuccessDialog = true
-            },
-            colors = ButtonDefaults.buttonColors(containerColor = LightBrown2),
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(16.dp)
-                .height(50.dp)
-        ) {
-            Text(
-                text = "Order Now",
-                fontFamily = colfiFont,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-        }
-        if (showSuccessDialog) {
-            LaunchedEffect(Unit) {
-                kotlinx.coroutines.delay(3000)
-                showSuccessDialog = false
-            }
-
-            AlertDialog(
-                onDismissRequest = { showSuccessDialog = false },
-                confirmButton = {},
-                text = {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
+                    IconButton(
+                        onClick = onEditOrderClick,
+                        modifier = Modifier.size(50.dp)
                     ) {
-                        // Success Image
                         Icon(
-                            painter = painterResource(id = R.drawable.successful),
-                            contentDescription = "Success",
-                            modifier = Modifier.size(80.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            "Placed Successfully",
-                            fontFamily = colfiFont,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp
+                            painter = painterResource(id = R.drawable.edit_icon),
+                            contentDescription = "Edit Order",
+                            modifier = Modifier.size(48.dp)
                         )
                     }
-                },
-                containerColor = LightCream1
-            )
-        }
-    }
+                }
 
-    // Address Popup
-    if (showAddressPopup) {
-        AddressPopup(
-            onDismiss = { showAddressPopup = false },
-            onSelect = { selected ->
-                viewModel.setCustomerAddress(selected)
-                showAddressPopup = false
-            },
-            onSave = { newAddress ->
-                savedAddresses = savedAddresses + newAddress
-                viewModel.setCustomerAddress(newAddress)
-                showAddressPopup = false
-            },
-            savedAddresses = savedAddresses
-        )
-    }
+                // Cart items
+                cartItems.forEach { item ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            AsyncImage(
+                                model = "https://via.placeholder.com/80x80.png?text=Drink",
+                                contentDescription = item.menuItem.name,
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = item.menuItem.name,
+                                    fontFamily = colfiFont,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "RM ${String.format("%.2f", item.totalPrice)}",
+                                    fontFamily = colfiFont,
+                                    color = Color.Black
+                                )
+                            }
+                        }
+                    }
+                }
 
-    // Instruction Popup
-    if (showInstructionPopup) {
-        InstructionPopup(
-            currentInstruction = uiState.deliveryInstruction,
-            onDismiss = { showInstructionPopup = false },
-            onSave = { instruction ->
-                viewModel.setDeliveryInstruction(instruction)
-                showInstructionPopup = false
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Delivery Instruction Section
+                Text(
+                    text = "Delivery Instruction",
+                    fontFamily = colfiFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+
+                if (uiState.deliveryInstruction.isNullOrEmpty()) {
+                    Text(
+                        text = "+ Add Instruction",
+                        fontFamily = colfiFont,
+                        color = DarkBrown1,
+                        modifier = Modifier
+                            .clickable { showInstructionPopup = true }
+                            .padding(vertical = 4.dp)
+                    )
+                } else {
+                    Column {
+                        Text(
+                            text = uiState.deliveryInstruction,
+                            fontFamily = colfiFont,
+                            fontSize = 15.sp,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Edit Instruction",
+                            color = Color.Gray,
+                            fontFamily = colfiFont,
+                            fontSize = 14.sp,
+                            modifier = Modifier.clickable { showInstructionPopup = true }
+                        )
+                    }
+                }
+
+
+                // Payment methods
+                Text(
+                    "Payment Methods",
+                    fontFamily = colfiFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+
+                val methods = listOf("Credit Card", "Colfi Wallet", "E-wallet", "Cash")
+                methods.forEach { method ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clickable { viewModel.selectPaymentMethod(method) }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        RadioButton(
+                            selected = uiState.paymentMethod == method,
+                            onClick = { viewModel.selectPaymentMethod(method) }
+                        )
+                        Text(text = method, fontFamily = colfiFont, fontSize = 14.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Payment details
+                Text(
+                    "Payment Details",
+                    fontFamily = colfiFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    PaymentDetailRow("Subtotal", "RM ${String.format("%.2f", uiState.subtotal)}")
+                    PaymentDetailRow(
+                        "Service Tax 6%",
+                        "RM ${String.format("%.2f", uiState.serviceTax)}"
+                    )
+                    PaymentDetailRow(
+                        "Net Total",
+                        "RM ${String.format("%.2f", uiState.netTotal)}",
+                        isBold = true
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
-        )
+
+            // Bottom Order Button
+            Button(
+                onClick = { showSuccessDialog = true; onOrderNow() },
+                colors = ButtonDefaults.buttonColors(containerColor = LightBrown2),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Text(
+                    "Order Now",
+                    fontFamily = colfiFont,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            if (showSuccessDialog) {
+                LaunchedEffect(Unit) { delay(3000); showSuccessDialog = false }
+
+                AlertDialog(
+                    onDismissRequest = { showSuccessDialog = false },
+                    confirmButton = {},
+                    text = {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.successful),
+                                contentDescription = "Success",
+                                modifier = Modifier.size(80.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                "Placed Successfully",
+                                fontFamily = colfiFont,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                        }
+                    },
+                    containerColor = LightCream1
+                )
+            }
+
+            // Address Popup
+            if (showAddressPopup) {
+                AddressPopup(
+                    onDismiss = { showAddressPopup = false },
+                    onSelect = { selected -> viewModel.setCustomerAddress(selected) },
+                    onSave = { newAddress ->
+                        savedAddresses = savedAddresses + newAddress
+                        viewModel.setCustomerAddress(newAddress)
+                    },
+                    savedAddresses = savedAddresses
+                )
+            }
+
+            // Instruction Popup
+            if (showInstructionPopup) {
+                InstructionPopup(
+                    currentInstruction = uiState.deliveryInstruction,
+                    onDismiss = { showInstructionPopup = false },
+                    onSave = { viewModel.setDeliveryInstruction(it) }
+                )
+            }
+        }
     }
 }
 
@@ -349,60 +360,22 @@ fun AddressPopup(
                 Text("Close", color = DarkBrown1, fontFamily = colfiFont)
             }
         },
-        title = {
-            Text("Manage Addresses", color = DarkBrown1, fontFamily = colfiFont)
-        },
+        title = { Text("Manage Addresses", color = DarkBrown1, fontFamily = colfiFont) },
         text = {
             Column {
-                // Input field for address
                 OutlinedTextField(
                     value = newAddress,
                     onValueChange = {
                         newAddress = it
-                        if (isError && it.isNotBlank()) {
-                            isError = false // clear error once user types
-                        }
+                        if (isError && it.isNotBlank()) isError = false
                     },
                     label = { Text("Enter Address") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
-                    isError = isError,
-                    colors = TextFieldDefaults.colors(
-                        //container color
-                        focusedContainerColor = LightCream1,
-                        unfocusedContainerColor = LightCream1,
-                        disabledContainerColor = LightCream1,
-                        errorContainerColor = LightCream1,
-
-                        // Text color
-                        focusedTextColor = DarkBrown1,
-                        unfocusedTextColor = DarkBrown1,
-                        disabledTextColor = Color.Gray,
-
-                        // Cursor
-                        cursorColor = LightBrown2,
-
-                        focusedIndicatorColor = LightBrown2,  // focusedBorderColor
-                        unfocusedIndicatorColor = DarkBrown1, // unfocusedBorderColor
-                        disabledIndicatorColor = Color.LightGray,
-                        errorIndicatorColor = Color.Red, // Example for error state
-
-                        // Label color
-                        focusedLabelColor = LightBrown2,
-                        unfocusedLabelColor = DarkBrown1,
-                        disabledLabelColor = Color.Gray,
-                    )
+                    isError = isError
                 )
 
-                if (isError) {
-                    Text(
-                        text = "Address cannot be empty!",
-                        color = Color.Red,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-
+                if (isError) Text("Address cannot be empty!", color = Color.Red, fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Button(
@@ -411,15 +384,12 @@ fun AddressPopup(
                             onSave(newAddress)
                             newAddress = ""
                             isError = false
-                        } else {
-                            isError = true
-                        }
+                            onDismiss()
+                        } else isError = true
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = LightBrown2)
-                ) {
-                    Text("Save Address", color = DarkBrown1, fontFamily = colfiFont)
-                }
+                ) { Text("Save Address", color = DarkBrown1, fontFamily = colfiFont) }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -434,7 +404,13 @@ fun AddressPopup(
                                 .padding(4.dp)
                         ) {
                             Text("• $address", modifier = Modifier.weight(1f))
-                            Text("Use", color = DarkBrown1)
+                            Text("Use",
+                                color = DarkBrown1,
+                                modifier = Modifier.clickable {
+                                    onSelect(address)
+                                    onDismiss()
+                                }
+                            )
                         }
                     }
                 }
@@ -455,52 +431,23 @@ fun InstructionPopup(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            Button(onClick = { onSave(instruction) }) {
+            Button(onClick = {
+                onSave(instruction)
+                onDismiss()
+            }) {
                 Text("Save")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         },
-        title = {
-            Text("Delivery Instruction",
-            color = DarkBrown1,
-            fontFamily = colfiFont)},
+        title = { Text("Delivery Instruction", color = DarkBrown1, fontFamily = colfiFont) },
         text = {
             OutlinedTextField(
                 value = instruction,
                 onValueChange = { instruction = it },
-                label = {
-                    Text("Enter instruction")},
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.colors(
-                    //container color
-                    focusedContainerColor = LightCream1,
-                    unfocusedContainerColor = LightCream1,
-                    disabledContainerColor = LightCream1,
-                    errorContainerColor = LightCream1,
-
-                    // Text color
-                    focusedTextColor = DarkBrown1,
-                    unfocusedTextColor = DarkBrown1,
-                    disabledTextColor = Color.Gray,
-
-                    // Cursor
-                    cursorColor = LightBrown2,
-
-                    focusedIndicatorColor = LightBrown2,  // focusedBorderColor
-                    unfocusedIndicatorColor = DarkBrown1, // unfocusedBorderColor
-                    disabledIndicatorColor = Color.LightGray,
-                    errorIndicatorColor = Color.Red, // Example for error state
-
-                    // Label color
-                    focusedLabelColor = LightBrown2,
-                    unfocusedLabelColor = DarkBrown1,
-                    disabledLabelColor = Color.Gray,
-
-                    )
+                label = { Text("Enter instruction") },
+                modifier = Modifier.fillMaxWidth()
             )
         },
         containerColor = LightCream1

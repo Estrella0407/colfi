@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.ProfileViewModel
+import com.example.colfi.ui.viewmodel.WalletViewModel
 
 @Composable
 fun ProfileScreen(
@@ -24,11 +25,13 @@ fun ProfileScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToLogin: () -> Unit,
     onNavigateToOrders: () -> Unit,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = viewModel(),
+    walletViewModel: WalletViewModel = viewModel()
 ) {
     val user by viewModel.user.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val walletUiState by walletViewModel.uiState.collectAsState()
 
     Box(
         modifier = Modifier
@@ -64,7 +67,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Email: ${user!!.email}", fontFamily = colfiFont)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Wallet: RM ${user!!.walletBalance}", fontFamily = colfiFont)
+                    Text("Wallet: RM ${String.format("%.2f", walletUiState.balance)}", fontFamily = colfiFont)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Points: ${user!!.points}", fontFamily = colfiFont)
                     Spacer(modifier = Modifier.height(8.dp))

@@ -70,12 +70,13 @@ fun MenuScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToCart: () -> Unit,
     modifier: Modifier = Modifier,
-    cartRespository: CartRepository
+    cartRepository: CartRepository
 ) {
     val uiState by menuViewModel.uiState.collectAsState()
+    var showPopup by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
     var selectedMenuItemForPopup by remember { mutableStateOf<MenuItem?>(null) }
-    val cartViewModel: CartViewModel = viewModel(factory = CartViewModelFactory(cartRespository))
+    val cartViewModel: CartViewModel = viewModel(factory = CartViewModelFactory(cartRepository))
 
     Box(
         modifier = Modifier
@@ -177,26 +178,136 @@ fun MenuScreen(
                             )
                         }
                     }
+
+                    if (showDialog && selectedMenuItemForPopup != null) {
+                        ItemSelectionPopUp(
+                            menuItem = selectedMenuItemForPopup!!,
+                            onDismiss = {
+                                showDialog = false
+                                selectedMenuItemForPopup = null
+                            },
+                            onProceedToCart = { cartItem ->
+                                cartViewModel.addToCart(cartItem)
+                                showDialog = false
+                                selectedMenuItemForPopup = null
+                                onNavigateToCart()
+                            }
+                        )
+                    }
                 }
             }
         }
 
-        // Popup -> returns a CartItem via onProceedToCart
-        if (showDialog && selectedMenuItemForPopup != null) {
-            ItemSelectionPopUp(
-                menuItem = selectedMenuItemForPopup!!,
-                onDismiss = {
-                    showDialog = false
-                    selectedMenuItemForPopup = null
+
+        @Composable
+        fun ItemSelectionPopUp(
+            menuItem: MenuItem,
+            onDismiss: () -> Unit,
+            onProceedToCart: (CartItem) -> Unit
+        ) {
+            var quantity by remember { mutableIntStateOf(1) }
+            var selectedTemperature by remember { mutableStateOf<String?>(null) }
+            var selectedSugarLevel by remember { mutableStateOf<String?>(null) }
+
+            val isTemperatureApplicable = menuItem.category in listOf("Coffee", "Tea")
+            val isSugarLevelApplicable = menuItem.category in listOf("Coffee", "Tea", "Beverages")
+
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                title = {
+                    Text(
+                        menuItem.name,
+                        fontFamily = colfiFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
                 },
-                onProceedToCart = { cartItem ->
-                    cartViewModel.addToCart(cartItem)
-                    println("Added ${cartItem.menuItem.name} (Options: ${cartItem.options}, Qty: ${cartItem.quantity}) to cart")
-                    showDialog = false
-                    selectedMenuItemForPopup = null
-                }
+                text = {
+                    Column(horizontalAlignment = Alignment.Start) {
+                        AsyncImage(
+                            model = if (menuItem.imageURL.isNotEmpty()) menuItem.imageURL else "https://via.placeholder.com/150x150?text=No+Image",
+                            contentDescription = menuItem.name,
+                            modifier = Modifier
+                                .height(150.dp)
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            menuItem.description,
+                            fontFamily = colfiFont,
+                            fontSize = 14.sp,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Quantity
+                        Text("Quantity:", fontFamily = colfiFont, fontWeight = FontWeight.SemiBold)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedButton(
+                                onClick = { if (quantity > 1) quantity-- },
+                                shape = CircleShape
+                            ) { Text("-") }
+
+                            Text(
+                                text = quantity.toString(),
+                                fontSize = 18.sp,
+                                fontFamily = colfiFont,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+
+                            OutlinedButton(
+                                onClick = { quantity++ },
+                                shape = CircleShape
+                            ) { Text("+") }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Total
+                        Text(
+                            text = "Total: RM ${String.format("%.2f", menuItem.price * quantity)}",
+                            fontFamily = colfiFont,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.End)
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (isTemperatureApplicable && selectedTemperature == null) {
+                                println("Please select temperature")
+                                return@Button
+                            }
+                            val cartItem = CartItem(
+                                menuItem = menuItem,
+                                quantity = quantity
+                            )
+                            onProceedToCart(cartItem)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(12.dp)
+                    ) { Text("Add to Cart", fontSize = 16.sp) }
+                },
+                dismissButton = {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Cancel") }
+                },
+                shape = RoundedCornerShape(20.dp),
+                containerColor = Color.White
             )
         }
+
 
         // Bottom Navigation Bar
         BottomNavigation(
@@ -556,8 +667,6 @@ fun ItemSelectionPopUp(
                     // Build CartItem and return it
                     val cartItem = CartItem(
                         menuItem = menuItem,
-                        selectedTemperature = selectedTemperature,
-                        selectedSugarLevel = selectedSugarLevel,
                         quantity = quantity
                     )
                     onProceedToCart(cartItem)

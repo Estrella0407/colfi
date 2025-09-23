@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.colfi.data.repository.AuthRepository
 import com.example.colfi.ui.state.RegisterUiState
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -82,20 +83,33 @@ class RegisterViewModel(
                 role = state.role // Pass role to repository
             )
 
-            _uiState.value = if (result.isSuccess) {
-                state.copy(
+            if (result.isSuccess) {
+                val firebaseUser = result.getOrNull()
+                val userId = firebaseUser?.uid
+
+                // ✅ Only create wallet for customer role
+                if (state.role == "customer" && userId != null) {
+                    val db = FirebaseFirestore.getInstance()
+                    val walletData = hashMapOf(
+                        "balance" to 0.0
+                    )
+                    db.collection("wallets").document(userId).set(walletData)
+                }
+
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    successMessage = result.getOrNull(),
+                    successMessage = "Registration successful!",
                     errorMessage = null
                 )
             } else {
-                state.copy(
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     errorMessage = result.exceptionOrNull()?.message
                 )
             }
         }
     }
+
 
     fun clearMessages() {
         _uiState.value = _uiState.value.copy(

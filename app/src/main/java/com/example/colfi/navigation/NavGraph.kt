@@ -1,15 +1,13 @@
 // NavGraph.kt
 package com.example.colfi.navigation
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.colfi.ColfiApplication
 import com.example.colfi.data.repository.CartRepository
@@ -49,7 +47,6 @@ fun NavGraph(navController: NavHostController) {
                     } else if (role == "staff") {
                         Screen.StaffOrders.createRoute(userName)
                     } else {
-                        // Handle other roles or default case
                         Screen.CustomerHome.createRoute(userName)
                     }
 
@@ -71,8 +68,7 @@ fun NavGraph(navController: NavHostController) {
             route = Screen.RoleSelection.route,
             arguments = listOf(navArgument("is_for_registration") { type = NavType.BoolType })
         ) { backStackEntry ->
-            val isForRegistrationArg = backStackEntry.arguments?.getBoolean("is_for_registration") ?: false // Default to false or true as appropriate
-
+            val isForRegistrationArg = backStackEntry.arguments?.getBoolean("is_for_registration") ?: false
             RoleSelectionScreen(
                 isForRegistration = isForRegistrationArg,
                 onRegisterWithRole = { selectedRole ->
@@ -81,7 +77,8 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        composable(Screen.Register.route,
+        composable(
+            Screen.Register.route,
             arguments = listOf(navArgument("role") { type = NavType.StringType })
         ) { backStackEntry ->
             val role = backStackEntry.arguments?.getString("role") ?: "customer"
@@ -181,7 +178,7 @@ fun NavGraph(navController: NavHostController) {
                         restoreState = true
                     }
                 },
-                cartRespository = cartRepositoryFromApplication
+                cartRepository = cartRepositoryFromApplication
             )
         }
 
@@ -255,7 +252,11 @@ fun NavGraph(navController: NavHostController) {
             arguments = listOf(navArgument("user_name") { type = NavType.StringType })
         ) { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
-            val cartViewModel: CartViewModel = viewModel()
+            val context = LocalContext.current
+            val application = context.applicationContext as ColfiApplication
+            val cartRepository: CartRepository = application.cartRepository
+            val cartViewModelFactory = CartViewModelFactory(cartRepository)
+            val cartViewModel: CartViewModel = viewModel(factory = cartViewModelFactory)
             CartScreen(
                 cartViewModel = cartViewModel,
                 onNavigateBack = {
@@ -266,10 +267,25 @@ fun NavGraph(navController: NavHostController) {
                         }
                     }
                 },
-                onProceedToCheckout = {
-                    // Navigate to checkout screen when implemented
-                    // navController.navigate(Screen.Checkout.createRoute(userName))
-                }
+                onProceedToPickup = { navController.navigate(Screen.PickUp.createRoute(userName)) },
+                onProceedToDelivery = { navController.navigate(Screen.Delivery.createRoute(userName)) }
+            )
+        }
+
+        // DineIn route
+        composable(
+            route = Screen.DineIn.route,
+            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
+            val context = LocalContext.current.applicationContext
+            val dineInViewModelFactory = DineInViewModelFactory(context)
+            val viewModel: DineInViewModel = viewModel(factory = dineInViewModelFactory)
+
+            DineInScreen(
+                context = context,
+                onBackClick = { navController.popBackStack() },
+                viewModel = viewModel
             )
         }
 
@@ -278,17 +294,31 @@ fun NavGraph(navController: NavHostController) {
             arguments = listOf(navArgument("user_name") { type = NavType.StringType })
         ) { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
-            val viewModel: PickUpViewModel = viewModel()
+            val pickUpViewModel: PickUpViewModel = viewModel()
+            val context = LocalContext.current
+            val application = context.applicationContext as ColfiApplication
+            val cartRepositoryInstance: CartRepository = application.cartRepository
 
+            val cartViewModelInstance: CartViewModel = viewModel(
+                key = "CartViewModel_PickUpShared", // Optional: A key can help control scoping if needed,
+                // or omit if you want it scoped to this NavBackStackEntry
+                factory = CartViewModelFactory(cartRepositoryInstance)
+            )
             PickUpScreen(
                 userName = userName,
-                viewModel = viewModel,
+                cartViewModel = cartViewModelInstance, // <<< PASS THE CORRECTLY CREATED INSTANCE
                 onBackClick = { navController.popBackStack() },
                 onOrderNow = {
                     navController.navigate(Screen.Orders.createRoute(userName)) {
                         launchSingleTop = true
                     }
-                }
+                },
+                onEditOrderClick = {
+                    navController.navigate(Screen.Cart.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                },
+                viewModel = pickUpViewModel
             )
         }
 
@@ -297,17 +327,29 @@ fun NavGraph(navController: NavHostController) {
             arguments = listOf(navArgument("user_name") { type = NavType.StringType })
         ) { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
-            val viewModel: DeliveryViewModel = viewModel()
-
+            val deliveryViewModel: DeliveryViewModel = viewModel()
+            val context = LocalContext.current
+            val application = context.applicationContext as ColfiApplication
+            val cartRepositoryInstance = application.cartRepository
+            val cartViewModelInstance: CartViewModel = viewModel(
+                key = "CartViewModel_DeliveryShared",
+                factory = CartViewModelFactory(cartRepositoryInstance)
+            )
             DeliveryScreen(
                 userName = userName,
-                viewModel = viewModel,
+                cartViewModel = cartViewModelInstance, // shared CartViewModel
                 onBackClick = { navController.popBackStack() },
                 onOrderNow = {
                     navController.navigate(Screen.Orders.createRoute(userName)) {
                         launchSingleTop = true
                     }
-                }
+                },
+                onEditOrderClick = {
+                    navController.navigate(Screen.Cart.createRoute(userName)) {
+                        launchSingleTop = true
+                    }
+                },
+                viewModel = deliveryViewModel
             )
         }
 
@@ -317,7 +359,6 @@ fun NavGraph(navController: NavHostController) {
         ) { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
             val viewModel: WalletViewModel = viewModel()
-
             WalletScreen(
                 userName = userName,
                 viewModel = viewModel,
@@ -328,7 +369,7 @@ fun NavGraph(navController: NavHostController) {
         composable(
             route = Screen.StaffOrders.route,
             arguments = listOf(navArgument("user_name") { type = NavType.StringType })
-            ) { backStackEntry ->
+        ) { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
             val viewModel: StaffOrdersViewModel = viewModel()
             StaffOrdersScreen(
@@ -340,10 +381,8 @@ fun NavGraph(navController: NavHostController) {
                         launchSingleTop = true
                         restoreState = true
                     }
-                },
+                }
             )
         }
     }
 }
-
-

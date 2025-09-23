@@ -1,6 +1,7 @@
 // CustomerHomeScreen.kt
 package com.example.colfi.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,10 +20,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.R
 import com.example.colfi.data.model.User
+import com.example.colfi.ui.state.WalletUiState
 import com.example.colfi.ui.theme.DarkBrown1
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.HomeViewModel
+import com.example.colfi.ui.viewmodel.WalletViewModel
 
 @Composable
 fun CustomerHomeScreen(
@@ -32,16 +35,32 @@ fun CustomerHomeScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToDineIn: () -> Unit,
     onNavigateToPickUp: () -> Unit,
-    onNavigateToDelivery:()-> Unit,
+    onNavigateToDelivery: () -> Unit,
     onNavigateToWallet: (String) -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
+    // Wallet ViewModel
+    val walletViewModel: WalletViewModel = viewModel()
+    val walletUiState by walletViewModel.uiState.collectAsState()
+
+    // Initialize wallet data
     LaunchedEffect(userName) {
-        viewModel.initialize(userName)
+        Log.d("CustomerHomeScreen", "LaunchedEffect triggered for userName: $userName")
+        viewModel.initialize(userName)        // <<< --- ADD THIS LINE ---
+        walletViewModel.initialize(userName)  // This one was already correct
     }
+
+    // Log the user state from HomeViewModel after attempting initialization
+    LaunchedEffect(uiState.user) {
+        Log.d("CustomerHomeScreen", "HomeViewModel uiState.user updated to: ${uiState.user}")
+    }
+    LaunchedEffect(uiState.isLoading) {
+        Log.d("CustomerHomeScreen", "HomeViewModel uiState.isLoading updated to: ${uiState.isLoading}")
+    }
+
 
     Box(
         modifier = Modifier
@@ -58,7 +77,6 @@ fun CustomerHomeScreen(
             val navBarHeight = WindowInsets.navigationBars
                 .asPaddingValues()
                 .calculateBottomPadding()
-
             val bottomNavHeight = 64.dp
 
             Column(
@@ -66,7 +84,7 @@ fun CustomerHomeScreen(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
                     .padding(16.dp)
-                    .padding(bottom = navBarHeight + bottomNavHeight), // dynamic bottom space
+                    .padding(bottom = navBarHeight + bottomNavHeight),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 ColfiHeader(randomQuote = uiState.randomQuote)
@@ -74,12 +92,24 @@ fun CustomerHomeScreen(
                 OrderOptions(
                     onDineInClick = { onNavigateToDineIn() },
                     onPickUpClick = { onNavigateToPickUp() },
-                    onDeliveryClick = { onNavigateToDelivery()  }
+                    onDeliveryClick = { onNavigateToDelivery() }
                 )
                 Spacer(modifier = Modifier.height(24.dp))
+
                 uiState.user?.let { user ->
-                    UserInfoSection(user = user, onWalletClick = { onNavigateToWallet(userName) })
+                    UserInfoSection(
+                        user = user,
+                        walletUiState = walletUiState,
+                        onWalletClick = { onNavigateToWallet(userName) }
+                    )
+                } ?: run {
+                    // This block will execute if uiState.user is still null AFTER isLoading is false
+                    Log.w("CustomerHomeScreen", "UserInfoSection not rendered because uiState.user is null (and not loading).")
+                    // Optionally, display a message here like "Could not load user details."
+                    // Text("Could not load user details for $userName.")
                 }
+
+
                 Spacer(modifier = Modifier.height(24.dp))
                 CafeInfoSection()
                 Spacer(modifier = Modifier.height(24.dp))
@@ -88,8 +118,7 @@ fun CustomerHomeScreen(
             BottomNavigation(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .navigationBarsPadding(),
+                    .fillMaxWidth(),
                 onHomeClick = { /* Already on Home */ },
                 onMenuClick = onNavigateToMenu,
                 onOrdersClick = onNavigateToOrders,
@@ -98,16 +127,13 @@ fun CustomerHomeScreen(
                 isOrdersSelected = false,
                 isProfileSelected = false
             )
-
         }
     }
 }
 
-
+// ---------- HEADER ----------
 @Composable
 fun ColfiHeader(randomQuote: String, modifier: Modifier = Modifier) {
-    val colfiFontFamily = colfiFont
-
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -138,17 +164,15 @@ fun ColfiHeader(randomQuote: String, modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = "— COLFi —",
-                fontFamily = colfiFontFamily,
+                fontFamily = colfiFont,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
-
             Spacer(modifier = Modifier.height(12.dp))
-
             Text(
                 text = randomQuote,
-                fontFamily = colfiFontFamily,
+                fontFamily = colfiFont,
                 fontSize = 14.sp,
                 fontStyle = FontStyle.Italic,
                 textAlign = TextAlign.Center
@@ -157,6 +181,7 @@ fun ColfiHeader(randomQuote: String, modifier: Modifier = Modifier) {
     }
 }
 
+// ---------- ORDER OPTIONS ----------
 @Composable
 fun OrderOptions(
     onDineInClick: () -> Unit,
@@ -181,10 +206,7 @@ fun OrderOptionCard(
     onClick: () -> Unit
 ) {
     Card(
-        colors = CardDefaults.cardColors(
-            containerColor = LightCream1,
-            contentColor = DarkBrown1
-        ),
+        colors = CardDefaults.cardColors(containerColor = LightCream1, contentColor = DarkBrown1),
         modifier = Modifier
             .clickable { onClick() }
             .padding(8.dp),
@@ -200,34 +222,31 @@ fun OrderOptionCard(
                 modifier = Modifier.size(48.dp),
                 tint = Color.Unspecified
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = englishText,
-                fontFamily = colfiFont,
-            )
+            Text(text = englishText, fontFamily = colfiFont)
         }
     }
 }
 
+// ---------- USER INFO ----------
 @Composable
-fun UserInfoSection(user: User,
-                    modifier: Modifier = Modifier,
-                    onWalletClick: () -> Unit) {
+fun UserInfoSection(
+    user: User,
+    walletUiState: WalletUiState,
+    modifier: Modifier = Modifier,
+    onWalletClick: () -> Unit
+) {
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Welcome message with user data
             Text(
                 text = "Welcome, ${user.displayName} 👋",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-
             Text(
                 text = "COLFi",
                 fontFamily = colfiFont,
@@ -237,13 +256,14 @@ fun UserInfoSection(user: User,
             )
         }
 
-        // Wallet and points info from user model
+        Spacer(modifier = Modifier.height(12.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             InfoCard(
-                title = String.format("%.2f", user.walletBalance),
+                title = String.format("%.2f", walletUiState.balance),
                 subtitle = "Wallet (RM)",
                 modifier = Modifier
                     .weight(1f)
@@ -283,21 +303,17 @@ fun InfoCard(title: String, subtitle: String, modifier: Modifier = Modifier) {
     }
 }
 
+// ---------- CAFE INFO ----------
 @Composable
 fun CafeInfoSection(modifier: Modifier = Modifier) {
     Card(
-        colors = CardDefaults.cardColors(
-            containerColor = LightCream1,
-            contentColor = DarkBrown1
-        ),
+        colors = CardDefaults.cardColors(containerColor = LightCream1, contentColor = DarkBrown1),
         modifier = modifier
             .fillMaxWidth()
             .padding(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "COLFi Cafe",
                 fontFamily = colfiFont,
@@ -306,23 +322,11 @@ fun CafeInfoSection(modifier: Modifier = Modifier) {
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
-
             Spacer(modifier = Modifier.height(16.dp))
-
-            CafeInfoParagraphs(
-                "Main Products:",
-                "Coffee | Tea"
-            )
-
+            CafeInfoParagraphs("Main Products:", "Coffee | Tea")
             Spacer(modifier = Modifier.height(12.dp))
-
-            CafeInfoParagraphs(
-                "Operating Hours:",
-                "07:00AM - 4:00PM (Mon - Fri)"
-            )
-
+            CafeInfoParagraphs("Operating Hours:", "07:00AM - 4:00PM (Mon - Fri)")
             Spacer(modifier = Modifier.height(12.dp))
-
             CafeInfoParagraphs(
                 "Address:",
                 "G-07, Wisma New Asia, Jalan Raja Chulan,\nBukit Ceylon, 50200 Kuala Lumpur,\nWilayah Persekutuan Kuala Lumpur"
@@ -334,21 +338,13 @@ fun CafeInfoSection(modifier: Modifier = Modifier) {
 @Composable
 fun CafeInfoParagraphs(title: String, subtitle: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
-        Text(
-            text = title,
-            fontFamily = colfiFont,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Text(text = title, fontFamily = colfiFont, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = subtitle,
-            fontFamily = colfiFont,
-            fontSize = 14.sp
-        )
+        Text(text = subtitle, fontFamily = colfiFont, fontSize = 14.sp)
     }
 }
 
+// ---------- BOTTOM NAV ----------
 @Composable
 fun BottomNavigation(
     modifier: Modifier = Modifier,
@@ -362,10 +358,7 @@ fun BottomNavigation(
     isMenuSelected: Boolean = false
 ) {
     Card(
-        colors = CardDefaults.cardColors(
-            containerColor = LightCream1,
-            contentColor = DarkBrown1
-        ),
+        colors = CardDefaults.cardColors(containerColor = LightCream1, contentColor = DarkBrown1),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         modifier = modifier.fillMaxWidth()
     ) {
@@ -375,41 +368,16 @@ fun BottomNavigation(
                 .padding(vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            BottomNavItem(
-                iconRes = R.drawable.homepage_icon,
-                label = "Home",
-                isSelected = isHomeSelected,
-                onClick = onHomeClick
-            )
-            BottomNavItem(
-                iconRes = R.drawable.menu,
-                label = "Menu",
-                isSelected = isMenuSelected,
-                onClick = onMenuClick
-            )
-            BottomNavItem(
-                iconRes = R.drawable.order_history,
-                label = "Orders",
-                isSelected = isOrdersSelected,
-                onClick = onOrdersClick
-            )
-            BottomNavItem(
-                iconRes = R.drawable.profile_icon,
-                label = "Me",
-                isSelected = isProfileSelected,
-                onClick = onProfileClick
-            )
+            BottomNavItem(R.drawable.homepage_icon, "Home", isSelected = isHomeSelected, onClick = onHomeClick)
+            BottomNavItem(R.drawable.menu, "Menu", isSelected = isMenuSelected, onClick = onMenuClick)
+            BottomNavItem(R.drawable.order_history, "Orders", isSelected = isOrdersSelected, onClick = onOrdersClick)
+            BottomNavItem(R.drawable.profile_icon, "Me", isSelected = isProfileSelected, onClick = onProfileClick)
         }
     }
 }
 
 @Composable
-fun BottomNavItem(
-    iconRes: Int,
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
+fun BottomNavItem(iconRes: Int, label: String, isSelected: Boolean, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -429,4 +397,3 @@ fun BottomNavItem(
         )
     }
 }
-
