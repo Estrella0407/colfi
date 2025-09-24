@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import com.example.colfi.R
+import com.example.colfi.ui.viewmodel.CheckoutViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -42,13 +43,16 @@ fun PickUpScreen(
     onBackClick: () -> Unit,
     onOrderNow: () -> Unit,
     onEditOrderClick: () -> Unit,
-    viewModel: PickUpViewModel
+    viewModel: PickUpViewModel,
+    checkoutViewModel: CheckoutViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val cartUiState by cartViewModel.uiState.collectAsState()
     val cartItems = cartUiState.cartItems
 
     var showSuccessDialog by remember { mutableStateOf(false) }
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
 
     // Update totals whenever cart changes
     LaunchedEffect(cartItems) {
@@ -281,7 +285,19 @@ fun PickUpScreen(
 
             // Bottom Order Now button
             Button(
-                onClick = { showSuccessDialog = true; onOrderNow() },
+                onClick = {
+                    checkoutViewModel.placeOrder(
+                        cartItems = cartItems,
+                        onSuccess = {
+                            showSuccessDialog = true
+                            cartViewModel.clearCart() // make sure cart clears
+                        },
+                        onFailure = { msg: String ->
+                            errorMessage = msg
+                            showErrorDialog = true
+                        }
+                    )
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = LightBrown2),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
@@ -326,6 +342,26 @@ fun PickUpScreen(
                 containerColor = LightCream1
             )
         }
+
+        if (showErrorDialog) {
+            AlertDialog(
+                onDismissRequest = { showErrorDialog = false },
+                confirmButton = {
+                    TextButton(onClick = { showErrorDialog = false }) {
+                        Text("OK", fontFamily = colfiFont)
+                    }
+                },
+                text = {
+                    Text(
+                        text = errorMessage,
+                        fontFamily = colfiFont,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                containerColor = LightCream1
+            )
+        }
+
     }
 }
 

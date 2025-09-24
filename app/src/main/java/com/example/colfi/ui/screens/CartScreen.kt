@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.data.model.CartItem
+import com.example.colfi.data.repository.AuthRepository
+import com.example.colfi.data.repository.OrdersRepository
 import com.example.colfi.ui.viewmodel.CartViewModel
 import com.example.colfi.ui.viewmodel.CheckoutViewModel
 
@@ -107,7 +109,10 @@ fun CartScreen(
 
                         if (showCheckout) {
                             val checkoutViewModel: CheckoutViewModel = viewModel(
-                                factory = CheckoutViewModelFactory(cartViewModel.cartRepository)
+                                factory = CheckoutViewModelFactory(cartViewModel.cartRepository,
+                                    AuthRepository(),              // 👈 add this
+                                    OrdersRepository()
+                                )
                             )
 
                             CheckoutPopUp(

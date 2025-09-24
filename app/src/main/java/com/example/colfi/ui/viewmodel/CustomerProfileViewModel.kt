@@ -165,4 +165,5 @@ class CustomerProfileViewModel(
     fun refreshProfile() {
         loadCustomer()
     }
+
 }

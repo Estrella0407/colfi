@@ -25,71 +25,42 @@ class WalletViewModel : ViewModel() {
     private val usersCollection = firestore.collection("users")
 
     fun initialize() {
-        Log.d("WalletViewModelDebug", "initialize called. Current user: ${auth.currentUser?.uid}")
-
-        _uiState.update {
-            it.copy(isLoading = true, message = null)
-        }
-
         val firebaseUser = auth.currentUser
         if (firebaseUser == null) {
-            Log.w("WalletViewModel", "No Firebase user authenticated")
             _uiState.update {
                 it.copy(
                     balance = 0.0,
-                    message = "Please log in to access wallet features",
-                    isLoading = false
+                    isLoading = false,
+                    message = "Please log in to access wallet features"
                 )
             }
             return
         }
 
         val userId = firebaseUser.uid
-        if (userId.isBlank()) {
-            Log.w("WalletViewModel", "User ID is blank")
-            _uiState.update {
-                it.copy(
-                    balance = 0.0,
-                    message = "User identifier missing",
-                    isLoading = false
-                )
-            }
-            return
-        }
 
-        val userDoc = usersCollection.document(userId)
-        userDoc.get()
-            .addOnSuccessListener { doc ->
-                if (doc != null && doc.exists()) {
-                    val balance = doc.getDouble("walletBalance") ?: 0.0
-                    Log.d("WalletViewModel", "Wallet loaded for user '$userId'. Balance: $balance")
+        _uiState.update { it.copy(isLoading = true, message = null) }
+
+        // Listen to wallet changes in realtime
+        usersCollection.document(userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
                     _uiState.update {
-                        it.copy(balance = balance, isLoading = false)
+                        it.copy(
+                            isLoading = false,
+                            message = "Error loading wallet: ${error.message}"
+                        )
                     }
-                } else {
-                    Log.w("WalletViewModel", "User document for '$userId' does not exist. Creating default wallet.")
-                    // Create a default wallet document if it doesn't exist
-                    userDoc.set(mapOf("walletBalance" to 0.0))
-                        .addOnSuccessListener {
-                            _uiState.update {
-                                it.copy(balance = 0.0, isLoading = false)
-                            }
-                        }
-                        .addOnFailureListener { e ->
-                            _uiState.update {
-                                it.copy(balance = 0.0, isLoading = false, message = "Error creating wallet")
-                            }
-                        }
+                    return@addSnapshotListener
                 }
-            }
-            .addOnFailureListener { exception ->
-                Log.e("WalletViewModel", "Error loading wallet: ${exception.message}")
-                _uiState.update {
-                    it.copy(
-                        balance = 0.0,
-                        isLoading = false,
-                        message = "Error loading wallet: ${exception.message}"
-                    )
+
+                if (snapshot != null && snapshot.exists()) {
+                    val balance = snapshot.getDouble("walletBalance") ?: 0.0
+                    _uiState.update { it.copy(balance = balance, isLoading = false) }
+                } else {
+                    _uiState.update {
+                        it.copy(balance = 0.0, isLoading = false, message = "No wallet found")
+                    }
                 }
             }
     }
@@ -142,6 +113,7 @@ class WalletViewModel : ViewModel() {
                         message = "Top-up RM${String.format("%.2f", amount)} successful!"
                     )
                 }
+                initialize()
 
             } catch (e: Exception) {
                 Log.e("WalletViewModel", "Top-up error: ${e.message}")

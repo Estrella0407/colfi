@@ -1,8 +1,7 @@
 // NavGraph.kt
 package com.example.colfi.navigation
 
-import android.os.Build
-import androidx.annotation.RequiresApi
+import CheckoutViewModelFactory
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
@@ -12,7 +11,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.colfi.ColfiApplication
+import com.example.colfi.data.repository.AuthRepository
 import com.example.colfi.data.repository.CartRepository
+import com.example.colfi.data.repository.OrdersRepository
 import com.example.colfi.ui.screens.*
 import com.example.colfi.ui.viewmodel.*
 
@@ -313,7 +314,16 @@ fun NavGraph(navController: NavHostController) {
             val context = LocalContext.current
             val application = context.applicationContext as ColfiApplication
             val cartRepositoryInstance: CartRepository = application.cartRepository
-
+            val authRepositoryInstance =
+                AuthRepository(context.applicationContext) // Or however you get this instance
+            val ordersRepositoryInstance = OrdersRepository() // Or however you get this instance
+            val checkoutViewModel: CheckoutViewModel = viewModel(
+                factory = CheckoutViewModelFactory(
+                    cartRepositoryInstance,
+                    authRepositoryInstance,
+                    ordersRepositoryInstance
+                )
+            )
             val cartViewModelInstance: CartViewModel = viewModel(
                 key = "CartViewModel_PickUpShared", // Optional: A key can help control scoping if needed,
                 // or omit if you want it scoped to this NavBackStackEntry
@@ -321,7 +331,8 @@ fun NavGraph(navController: NavHostController) {
             )
             PickUpScreen(
                 userName = userName,
-                cartViewModel = cartViewModelInstance, // <<< PASS THE CORRECTLY CREATED INSTANCE
+                cartViewModel = cartViewModelInstance,
+                checkoutViewModel = checkoutViewModel, // <<< PASS THE CORRECTLY CREATED INSTANCE
                 onBackClick = { navController.popBackStack() },
                 onOrderNow = {
                     navController.navigate(Screen.Orders.createRoute(userName)) {
@@ -346,6 +357,16 @@ fun NavGraph(navController: NavHostController) {
             val context = LocalContext.current
             val application = context.applicationContext as ColfiApplication
             val cartRepositoryInstance = application.cartRepository
+            val authRepositoryInstance =
+                AuthRepository(context.applicationContext) // Or however you get this instance
+            val ordersRepositoryInstance = OrdersRepository() // Or however you get this instance
+            val checkoutViewModel: CheckoutViewModel = viewModel(
+                factory = CheckoutViewModelFactory(
+                    cartRepositoryInstance,
+                    authRepositoryInstance,
+                    ordersRepositoryInstance
+                )
+            )
             val cartViewModelInstance: CartViewModel = viewModel(
                 key = "CartViewModel_DeliveryShared",
                 factory = CartViewModelFactory(cartRepositoryInstance)
@@ -353,6 +374,7 @@ fun NavGraph(navController: NavHostController) {
             DeliveryScreen(
                 userName = userName,
                 cartViewModel = cartViewModelInstance, // shared CartViewModel
+                checkoutViewModel = checkoutViewModel,
                 onBackClick = { navController.popBackStack() },
                 onOrderNow = {
                     navController.navigate(Screen.Orders.createRoute(userName)) {
@@ -380,6 +402,7 @@ fun NavGraph(navController: NavHostController) {
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
             val viewModel: WalletViewModel = viewModel()
             WalletScreen(
+                navController = navController,
                 userName = userName,
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() }

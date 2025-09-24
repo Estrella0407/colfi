@@ -26,6 +26,7 @@ import com.example.colfi.ui.viewmodel.CartViewModel
 import com.example.colfi.ui.viewmodel.PickUpViewModel
 import kotlinx.coroutines.delay
 import androidx.compose.ui.res.painterResource
+import com.example.colfi.ui.viewmodel.CheckoutViewModel
 import com.example.colfi.ui.viewmodel.DeliveryViewModel
 
 @Composable
@@ -35,13 +36,17 @@ fun DeliveryScreen(
     onBackClick: () -> Unit,
     onOrderNow: () -> Unit,
     onEditOrderClick: () -> Unit,
-    viewModel: DeliveryViewModel = viewModel()
-) {
+    viewModel: DeliveryViewModel = viewModel(),
+    checkoutViewModel: CheckoutViewModel = viewModel(),
+
+    ) {
     val uiState by viewModel.uiState.collectAsState()
     val cartUiState by cartViewModel.uiState.collectAsState()
     val cartItems = cartUiState.cartItems
 
     var showSuccessDialog by remember { mutableStateOf(false) }
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
     var showAddressPopup by remember { mutableStateOf(false) }
     var showInstructionPopup by remember { mutableStateOf(false) }
     var savedAddresses by remember { mutableStateOf(listOf<String>()) }
@@ -271,7 +276,19 @@ fun DeliveryScreen(
 
             // Bottom Order Button
             Button(
-                onClick = { showSuccessDialog = true; onOrderNow() },
+                onClick = {
+                    checkoutViewModel.placeOrder(
+                        cartItems = cartItems,
+                        onSuccess = {
+                            showSuccessDialog = true
+                            cartViewModel.clearCart() // make sure cart clears
+                        },
+                        onFailure = { msg: String ->
+                            errorMessage = msg
+                            showErrorDialog = true
+                        }
+                    )
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = LightBrown2),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
@@ -312,6 +329,25 @@ fun DeliveryScreen(
                                 fontSize = 18.sp
                             )
                         }
+                    },
+                    containerColor = LightCream1
+                )
+            }
+
+            if (showErrorDialog) {
+                AlertDialog(
+                    onDismissRequest = { showErrorDialog = false },
+                    confirmButton = {
+                        TextButton(onClick = { showErrorDialog = false }) {
+                            Text("OK", fontFamily = colfiFont)
+                        }
+                    },
+                    text = {
+                        Text(
+                            text = errorMessage,
+                            fontFamily = colfiFont,
+                            fontWeight = FontWeight.Bold
+                        )
                     },
                     containerColor = LightCream1
                 )

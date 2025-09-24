@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color.Companion.White // Already here, good
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.example.colfi.ui.viewmodel.WalletViewModel
 import com.example.colfi.ui.theme.*
 
@@ -21,6 +22,7 @@ import com.example.colfi.ui.theme.*
 @Composable
 fun WalletScreen(
     userName: String,
+    navController: NavHostController,
     viewModel: WalletViewModel = viewModel(),
     onBackClick: () -> Unit
 ) {
@@ -97,7 +99,7 @@ fun WalletScreen(
                     FilterChip(
                         selected = true,
                         onClick = { },
-                        label = { Text("Test Chip") }
+                        label = { Text("TNG") }
                     )
                 }
 

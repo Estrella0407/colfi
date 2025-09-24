@@ -22,11 +22,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.R
 import com.example.colfi.data.model.Customer
 import com.example.colfi.data.model.Guest
-import com.example.colfi.data.model.User
 import com.example.colfi.ui.state.WalletUiState
 import com.example.colfi.ui.theme.DarkBrown1
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
+import com.example.colfi.ui.viewmodel.CustomerProfileViewModel
 import com.example.colfi.ui.viewmodel.HomeViewModel
 import com.example.colfi.ui.viewmodel.WalletViewModel
 
@@ -43,9 +43,17 @@ fun CustomerHomeScreen(
     onNavigateToLogin: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
-
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+
+    // ✅ Added WalletViewModel to observe live balance
+    val walletViewModel: WalletViewModel = viewModel()
+    val walletState by walletViewModel.uiState.collectAsState()
+
+    // Initialize wallet listener
+    LaunchedEffect(Unit) {
+        walletViewModel.initialize()
+    }
 
     // Handle navigation to login when authentication fails
     LaunchedEffect(uiState.shouldNavigateToLogin) {
@@ -70,7 +78,6 @@ fun CustomerHomeScreen(
             }
 
             uiState.errorMessage != null -> {
-                // Show error state with retry option
                 ErrorState(
                     errorMessage = uiState.errorMessage!!,
                     onRetry = { viewModel.refreshUserData() },
@@ -79,10 +86,10 @@ fun CustomerHomeScreen(
             }
 
             else -> {
-                // Normal content for both Customer and Guest users
                 HomeContent(
                     uiState = uiState,
                     homeViewModel = viewModel,
+                    walletState = walletState, // ✅ pass walletState
                     scrollState = scrollState,
                     userName = userName,
                     onNavigateToMenu = onNavigateToMenu,
@@ -95,7 +102,6 @@ fun CustomerHomeScreen(
                     onNavigateToLogin = onNavigateToLogin,
                 )
 
-                // Bottom Navigation Bar
                 BottomNavigation(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -149,6 +155,7 @@ private fun ErrorState(
 private fun HomeContent(
     uiState: com.example.colfi.ui.state.HomeUiState,
     homeViewModel: HomeViewModel,
+    walletState: WalletUiState, // ✅ added walletState
     scrollState: ScrollState,
     userName: String,
     onNavigateToMenu: () -> Unit,
@@ -164,6 +171,7 @@ private fun HomeContent(
         .asPaddingValues()
         .calculateBottomPadding()
     val bottomNavHeight = 64.dp
+    val profileViewModel: CustomerProfileViewModel = viewModel()
 
     Column(
         modifier = Modifier
@@ -183,12 +191,11 @@ private fun HomeContent(
         )
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Show user info based on user type
         when {
             uiState.user != null && uiState.user is Customer -> {
                 UserInfoSection(
                     user = uiState.user as Customer,
-                    walletBalance = homeViewModel.getWalletBalance(),
+                    walletBalance = walletState.balance, // ✅ live balance
                     onWalletClick = { onNavigateToWallet(userName) }
                 )
             }
@@ -223,7 +230,6 @@ fun GuestInfoSection(
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-
             Text(
                 text = "COLFi",
                 fontFamily = colfiFont,
@@ -233,7 +239,6 @@ fun GuestInfoSection(
             )
         }
 
-        // Guest info card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE4D1))
@@ -259,8 +264,6 @@ fun GuestInfoSection(
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-
-                // Logout button for guest users
                 Button(
                     onClick = onLogoutClick,
                     colors = ButtonDefaults.buttonColors(containerColor = DarkBrown1),
@@ -280,8 +283,6 @@ fun GuestInfoSection(
 
 @Composable
 fun ColfiHeader(randomQuote: String, modifier: Modifier = Modifier) {
-    val colfiFontFamily = colfiFont
-
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -312,7 +313,7 @@ fun ColfiHeader(randomQuote: String, modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = "— COLFi —",
-                fontFamily = colfiFontFamily,
+                fontFamily = colfiFont,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
@@ -322,7 +323,7 @@ fun ColfiHeader(randomQuote: String, modifier: Modifier = Modifier) {
 
             Text(
                 text = randomQuote,
-                fontFamily = colfiFontFamily,
+                fontFamily = colfiFont,
                 fontSize = 14.sp,
                 fontStyle = FontStyle.Italic,
                 textAlign = TextAlign.Center
@@ -392,6 +393,8 @@ fun UserInfoSection(
     modifier: Modifier = Modifier,
     onWalletClick: () -> Unit
 ) {
+    val profileViewModel: CustomerProfileViewModel = viewModel()
+
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -424,7 +427,9 @@ fun UserInfoSection(
                 subtitle = "Wallet (RM)",
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { onWalletClick() }
+                    .clickable {
+                        onWalletClick()
+                        profileViewModel.refreshProfile()}
             )
             Spacer(modifier = Modifier.width(16.dp))
             InfoCard(

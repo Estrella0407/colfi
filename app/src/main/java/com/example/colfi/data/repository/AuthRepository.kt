@@ -452,4 +452,43 @@ class AuthRepository(private val context: Context? = null) {
             Result.failure(e)
         }
     }
+
+    suspend fun getWalletBalance(): Result<Double> {
+        return try {
+            val uid = auth.currentUser?.uid
+            if (uid == null) {
+                Log.w("AuthRepo", "getWalletBalance: No user logged in")
+                return Result.failure(Exception("No user logged in to fetch wallet balance."))
+            }
+            val doc = usersCollection.document(uid).get().await()
+            if (!doc.exists()) {
+                Log.w("AuthRepo", "getWalletBalance: User document not found for UID: $uid")
+                return Result.success(doc.getDouble("walletBalance") ?: 0.0)
+            }
+            Result.success(doc.getDouble("walletBalance") ?: 0.0)
+        } catch (e: Exception) {
+            Log.e("AuthRepo", "getWalletBalance failed", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateWalletBalance(newBalance: Double): Result<Unit> {
+        return try {
+            val uid = auth.currentUser?.uid
+            if (uid == null) {
+                Log.w("AuthRepo", "updateWalletBalance: No user logged in")
+                return Result.failure(Exception("No user logged in to update wallet balance."))
+            }
+            usersCollection.document(uid)
+                .update("walletBalance", newBalance)
+                .await()
+            Log.d("AuthRepo", "updateWalletBalance successful for UID: $uid")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("AuthRepo", "updateWalletBalance failed", e)
+            Result.failure(e)
+        }
+    }
+
+
 }
