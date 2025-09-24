@@ -12,8 +12,8 @@ interface CartDao {
     @Query("SELECT * FROM cart_items WHERE id = :id")
     suspend fun getCartItemById(id: Long): CartItemEntity?
 
-    @Query("SELECT * FROM cart_items WHERE menuItemId = :menuItemId AND selectedTemperature = :temperature AND selectedSugarLevel = :sugarLevel LIMIT 1")
-    suspend fun findSimilarItem(menuItemId: String, temperature: String?, sugarLevel: String?): CartItemEntity?
+    @Query("SELECT * FROM cart_items WHERE menuItemId = :menuItemId LIMIT 1")
+    suspend fun findSimilarItem(menuItemId: String): CartItemEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCartItem(cartItem: CartItemEntity): Long

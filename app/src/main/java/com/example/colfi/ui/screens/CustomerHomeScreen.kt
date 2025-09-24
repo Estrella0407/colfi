@@ -1,7 +1,6 @@
 // CustomerHomeScreen.kt
 package com.example.colfi.ui.screens
 
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,8 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.R
-import com.example.colfi.data.model.Customer
-import com.example.colfi.data.model.Guest
+import com.example.colfi.data.model.User
 import com.example.colfi.ui.theme.DarkBrown1
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
@@ -28,7 +26,7 @@ import com.example.colfi.ui.viewmodel.HomeViewModel
 
 @Composable
 fun CustomerHomeScreen(
-    userName: String, // This parameter is now optional since we get user from Firebase
+    userName: String,
     onNavigateToMenu: () -> Unit,
     onNavigateToOrders: () -> Unit,
     onNavigateToCustomerProfile: () -> Unit,
@@ -48,7 +46,25 @@ fun CustomerHomeScreen(
             onNavigateToLogin()
             viewModel.onNavigateToLoginHandled()
         }
+    // Wallet ViewModel
+    val walletViewModel: WalletViewModel = viewModel()
+    val walletUiState by walletViewModel.uiState.collectAsState()
+
+    // Initialize wallet data
+    LaunchedEffect(userName) {
+        Log.d("CustomerHomeScreen", "LaunchedEffect triggered for userName: $userName")
+        viewModel.initialize(userName)        // <<< --- ADD THIS LINE ---
+        walletViewModel.initialize(userName)  // This one was already correct
     }
+
+    // Log the user state from HomeViewModel after attempting initialization
+    LaunchedEffect(uiState.user) {
+        Log.d("CustomerHomeScreen", "HomeViewModel uiState.user updated to: ${uiState.user}")
+    }
+    LaunchedEffect(uiState.isLoading) {
+        Log.d("CustomerHomeScreen", "HomeViewModel uiState.isLoading updated to: ${uiState.isLoading}")
+    }
+
 
     Box(
         modifier = Modifier
@@ -270,7 +286,6 @@ fun GuestInfoSection(
     }
 }
 
-// Keep all your existing composables exactly as they are
 @Composable
 fun ColfiHeader(randomQuote: String, modifier: Modifier = Modifier) {
     val colfiFontFamily = colfiFont
@@ -379,9 +394,12 @@ fun OrderOptionCard(
 }
 
 @Composable
-fun UserInfoSection(user: Customer,
-                    modifier: Modifier = Modifier,
-                    onWalletClick: () -> Unit) {
+fun UserInfoSection(
+    user: User,
+    walletUiState: WalletUiState,
+    modifier: Modifier = Modifier,
+    onWalletClick: () -> Unit
+) {
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -410,7 +428,7 @@ fun UserInfoSection(user: Customer,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             InfoCard(
-                title = String.format("%.2f", user.walletBalance),
+                title = String.format("%.2f", walletUiState.balance),
                 subtitle = "Wallet (RM)",
                 modifier = Modifier
                     .weight(1f)
@@ -596,3 +614,4 @@ fun BottomNavItem(
         )
     }
 }
+

@@ -4,6 +4,7 @@ package com.example.colfi.ui.viewmodel
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
+import com.example.colfi.data.model.CartItem
 import com.example.colfi.ui.state.PickUpUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +18,9 @@ class PickUpViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(PickUpUiState())
     val uiState: StateFlow<PickUpUiState> = _uiState
 
+    fun setStoreInfo(name: String, address: String) {
+        _uiState.update { it.copy(storeName = name, storeAddress = address) }
+    }
     // User selects pick up time
     fun selectTime(time: String) {
         _uiState.update { it.copy(selectedTime = time) }
@@ -28,12 +32,15 @@ class PickUpViewModel : ViewModel() {
     }
 
     // Recalculate totals if needed
-    fun updateTotals(price: Double) {
-        val tax = price * 0.06
-        val total = price + tax
+    fun updateTotals(cartItems: List<CartItem>) {
+        val subtotal: Double = cartItems.sumOf { cartItem ->
+            cartItem.totalPrice
+        }
+        val tax = subtotal * 0.06
+        val total = subtotal + tax
         _uiState.update {
             it.copy(
-                subtotal = price,
+                subtotal = subtotal,
                 serviceTax = tax,
                 netTotal = total
             )

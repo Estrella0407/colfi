@@ -115,11 +115,7 @@ class OrdersRepository {
                     id = cartItem.menuItem.id,
                     name = cartItem.menuItem.name,
                     quantity = cartItem.quantity,
-                    price = cartItem.menuItem.price,
-                    temperature = cartItem.selectedTemperature ?: "",
-                    customizations = buildList {
-                        cartItem.selectedSugarLevel?.let { add(it) }
-                    }
+                    price = cartItem.menuItem.price
                 )
             }
 
