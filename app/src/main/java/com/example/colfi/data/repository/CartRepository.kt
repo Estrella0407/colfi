@@ -30,12 +30,15 @@ class CartRepository(private val cartDao: CartDao) {
             }
     }
 
-
     suspend fun addToCart(cartItem: CartItem): Result<Unit> {
         return try {
-            Log.d("CartRepository", "addToCart CALLED with: ${cartItem.menuItem.name}, Qty: ${cartItem.quantity}")
-            val existingItem = cartDao.findSimilarItem(cartItem.menuItem.id
+            // Check if similar item exists
+            val existingItem = cartDao.findSimilarItem(
+                cartItem.menuItem.id,
+                cartItem.selectedTemperature,
+                cartItem.selectedSugarLevel
             )
+
             if (existingItem != null) {
                 val updatedItem = existingItem.copy(
                     quantity = existingItem.quantity + cartItem.quantity
@@ -54,19 +57,7 @@ class CartRepository(private val cartDao: CartDao) {
         }
     }
 
-    suspend fun getCartItemWithId(menuItemId: String): CartItemEntity? {
-        Log.d("CartRepository", "getCartItemWithId CALLED for: $menuItemId")
-        return try {
-            val item = cartDao.findSimilarItem(menuItemId)
-            Log.d("CartRepository", "getCartItemWithId FOUND: ${item != null}")
-            item
-        } catch (e: Exception) {
-            Log.e("CartRepository", "getCartItemWithId FAILED", e)
-            null
-        }
-    }
-
-    suspend fun removeFromCart(cartItemId: Long): Result<Unit> { // Assuming cartItemId is CartItemEntity's primary key
+    suspend fun removeFromCart(cartItemId: Long): Result<Unit> {
         return try {
             Log.d("CartRepository", "removeFromCart CALLED for ID: $cartItemId")
             cartDao.getCartItemById(cartItemId)?.let { item ->
@@ -80,21 +71,20 @@ class CartRepository(private val cartDao: CartDao) {
         }
     }
 
-    suspend fun updateQuantity(cartItemId: Long, quantity: Int): Result<Unit> { // Assuming cartItemId is CartItemEntity's primary key
+    suspend fun updateQuantity(cartItemId: Long, quantity: Int): Result<Unit> {
         return try {
             Log.d("CartRepository", "updateQuantity CALLED for ID: $cartItemId to Qty: $quantity")
             if (quantity <= 0) {
                 removeFromCart(cartItemId)
             } else {
                 cartDao.updateQuantity(cartItemId, quantity)
+                Result.success(Unit)
             }
-            Result.success(Unit)
         } catch (e: Exception) {
             Log.e("CartRepository", "updateQuantity FAILED", e)
             Result.failure(e)
         }
     }
-
 
     suspend fun clearCart(): Result<Unit> {
         return try {
@@ -118,5 +108,18 @@ class CartRepository(private val cartDao: CartDao) {
         return cartDao.getTotalPrice()
             .map { it ?: 0.0 }
             .catch { emit(0.0) }
+    }
+
+    // Returns CartItemEntity
+    suspend fun getCartItemWithId(
+        menuItemId: String,
+        temperature: String?,
+        sugarLevel: String?
+    ): CartItemEntity? {
+        return try {
+            cartDao.findSimilarItem(menuItemId, temperature, sugarLevel)
+        } catch (e: Exception) {
+            null
+        }
     }
 }

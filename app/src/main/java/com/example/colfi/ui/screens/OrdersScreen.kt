@@ -29,7 +29,7 @@ fun OrdersScreen(
     userName: String,
     onNavigateToMenu: () -> Unit,
     onNavigateToHome: () -> Unit,
-    onNavigateToProfile: () -> Unit,
+    onNavigateToCustomerProfile: () -> Unit,
     viewModel: OrdersViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -97,7 +97,7 @@ fun OrdersScreen(
             }
         }
 
-        // Bottom Navigation Bar
+        // Bottom Navigation Bar - Fixed at bottom
         BottomNavigation(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -106,11 +106,11 @@ fun OrdersScreen(
             onHomeClick = onNavigateToHome,
             onMenuClick = onNavigateToMenu,
             onOrdersClick = { },
-            onProfileClick = onNavigateToProfile,
+            onCustomerProfileClick = onNavigateToCustomerProfile,
             isHomeSelected = false,
             isMenuSelected = false,
             isOrdersSelected = true,
-            isProfileSelected = false
+            isCustomerProfileSelected = false
         )
     }
 }

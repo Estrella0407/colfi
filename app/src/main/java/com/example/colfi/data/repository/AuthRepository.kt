@@ -1,208 +1,455 @@
 // AuthRepository.kt
 package com.example.colfi.data.repository
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
-import com.example.colfi.data.model.User // Make sure your User data class is correctly defined
+import com.example.colfi.data.model.Customer
+import com.example.colfi.data.model.Guest
+import com.example.colfi.data.model.Staff
+import com.example.colfi.data.model.User
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 
-class AuthRepository {
-
+class AuthRepository(private val context: Context? = null) {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
     private val usersCollection = db.collection("users")
 
-    fun isUserLoggedIn(): Boolean {
-        return auth.currentUser != null
+    // Use SharedPreferences to persist guest state
+    private val prefs: SharedPreferences? = context?.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+    private val GUEST_MODE_KEY = "is_guest_mode"
+    private val GUEST_USERNAME_KEY = "guest_username"
+    private val GUEST_DISPLAY_NAME_KEY = "guest_display_name"
+    private val GUEST_EMAIL_KEY = "guest_email"
+    private val GUEST_ROLE_KEY = "guest_role"
+    private val IS_FIRST_TIME_GUEST_KEY = "is_first_time_guest"
+
+    // Store guest state in memory for performance
+    private var currentGuestUser: Guest? = null
+    private var isGuestMode: Boolean = false
+
+    init {
+        // Restore guest state from SharedPreferences on initialization
+        restoreGuestState()
     }
 
-    fun getCurrentAuthUser(): FirebaseUser? {
-        return auth.currentUser
-    }
+    private fun restoreGuestState() {
+        prefs?.let { preferences ->
+            isGuestMode = preferences.getBoolean(GUEST_MODE_KEY, false)
+            if (isGuestMode) {
+                val username = preferences.getString(GUEST_USERNAME_KEY, "guest") ?: "guest"
+                val displayName = preferences.getString(GUEST_DISPLAY_NAME_KEY, "Guest") ?: "Guest"
+                val email = preferences.getString(GUEST_EMAIL_KEY, "guest@local") ?: "guest@local"
+                val role = preferences.getString(GUEST_ROLE_KEY, "guest") ?: "guest"
 
-    // Fetches the User data class object from Firestore using UID
-    suspend fun getUserDataByUid(uid: String): User? {
-        return try {
-            val documentSnapshot = usersCollection.document(uid).get().await()
-            if (documentSnapshot.exists()) {
-                documentSnapshot.toObject(User::class.java)
-            } else {
-                Log.w("AuthRepository", "No user document found in Firestore for UID: $uid")
-                null
-            }
-        } catch (e: Exception) {
-            Log.e("AuthRepository", "Error fetching user data for UID $uid from Firestore", e)
-            null
-        }
-    }
-
-    suspend fun getCurrentUser(): Result<User> {
-        val currentFirebaseUser = auth.currentUser // Get the FirebaseUser object
-        if (currentFirebaseUser != null) {
-            // User is logged in with Firebase Auth, now get their custom data from Firestore
-            val uid = currentFirebaseUser.uid
-            return try {
-                val user: User? = getUserDataByUid(uid) // Reuse your existing function
-                if (user != null) {
-                    Log.d("AuthRepository", "Successfully fetched custom User data for UID: $uid")
-                    Result.success(user)
-                } else {
-                    Log.w("AuthRepository", "User is authenticated (UID: $uid) but no custom user data found in Firestore.")
-                    Result.failure(Exception("User data not found in database for UID: $uid"))
-                }
-            } catch (e: Exception) {
-                Log.e("AuthRepository", "Error occurred while fetching custom User data for UID $uid", e)
-                Result.failure(Exception("Failed to retrieve user profile: ${e.message}", e))
-            }
-        } else {
-            // No user is logged in with Firebase Auth
-            Log.d("AuthRepository", "No user currently authenticated with Firebase.")
-            return Result.failure(Exception("No user logged in."))
-        }
-    }
-    // Function for anonymous login (Guest)
-    // Guest data is stored in Firestore keyed by their anonymous UID
-    suspend fun loginAsGuest(): Result<Pair<String, User>> { // Returns UID and User object
-        return try {
-            val authResult = auth.signInAnonymously().await()
-            val firebaseUser = authResult.user ?: throw Exception("Anonymous sign-in failed unexpectedly.")
-
-            // Check if guest document already exists, if not create it
-            val guestDocRef = usersCollection.document(firebaseUser.uid)
-            var guestUser = guestDocRef.get().await().toObject(User::class.java)
-
-            if (guestUser == null) {
-                guestUser = User(
-                    // id = firebaseUser.uid, // Store UID if your User model has an id field
-                    username = "guest_${firebaseUser.uid.take(6)}",
-                    displayName = "Guest",
-                    email = "",
-                    role = "guest",
-                    points = 0,
-                    vouchers = 0
+                currentGuestUser = Guest(
+                    username = username,
+                    displayName = displayName,
+                    email = email,
+                    role = role
                 )
-                guestDocRef.set(guestUser).await()
-                Log.d("AuthRepository", "Created Firestore document for new guest UID: ${firebaseUser.uid}")
-            } else {
-                Log.d("AuthRepository", "Existing Firestore document found for guest UID: ${firebaseUser.uid}")
+                Log.d("AuthRepo", "Restored guest state from SharedPreferences")
+            }
+        }
+    }
+
+    private fun saveGuestState(guest: Guest) {
+        prefs?.edit()?.apply {
+            putBoolean(GUEST_MODE_KEY, true)
+            putString(GUEST_USERNAME_KEY, guest.username)
+            putString(GUEST_DISPLAY_NAME_KEY, guest.displayName)
+            putString(GUEST_EMAIL_KEY, guest.email)
+            putString(GUEST_ROLE_KEY, guest.role)
+            apply()
+        }
+        Log.d("AuthRepo", "Saved guest state to SharedPreferences")
+    }
+
+    private fun clearGuestState() {
+        prefs?.edit()?.apply {
+            putBoolean(GUEST_MODE_KEY, false)
+            remove(GUEST_USERNAME_KEY)
+            remove(GUEST_DISPLAY_NAME_KEY)
+            remove(GUEST_EMAIL_KEY)
+            remove(GUEST_ROLE_KEY)
+            apply()
+        }
+        Log.d("AuthRepo", "Cleared guest state from SharedPreferences")
+    }
+
+    suspend fun login(usernameOrEmail: String, password: String): Result<User> {
+        return try {
+            // Clear guest mode when logging in properly
+            clearGuestState()
+            isGuestMode = false
+            currentGuestUser = null
+
+            // Reset first-time guest flag since user is logging in properly
+            prefs?.edit()?.apply {
+                putBoolean(IS_FIRST_TIME_GUEST_KEY, true)
+                apply()
             }
 
-            Log.d("AuthRepository", "Anonymous login successful for UID: ${firebaseUser.uid}")
-            Result.success(Pair(firebaseUser.uid, guestUser))
+            val isEmail = usernameOrEmail.contains("@")
+
+            val email = if (isEmail) {
+                usernameOrEmail
+            } else {
+                // Look up email by username
+                val userQuery = usersCollection
+                    .whereEqualTo("username", usernameOrEmail)
+                    .limit(1)
+                    .get()
+                    .await()
+
+                if (userQuery.isEmpty) {
+                    throw Exception("Username '$usernameOrEmail' not found")
+                }
+
+                val userDoc = userQuery.documents.first()
+                userDoc.getString("email") ?: throw Exception("Email not found for username")
+            }
+
+            // Authenticate with Firebase Auth
+            val authResult = auth.signInWithEmailAndPassword(email, password).await()
+            val firebaseUser = authResult.user
+
+            if (firebaseUser == null) {
+                throw Exception("Authentication failed")
+            }
+
+            // Get user data from Firestore after successful authentication
+            getCurrentUser()
+
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Anonymous login failed: ${e.message}", e)
+            Log.e("AuthRepo", "Login failed: ${e.message}")
             Result.failure(e)
         }
     }
 
-    // Login with username/password
-    // Returns Pair of UID and User object on success
-    suspend fun login(usernameInput: String, passwordInput: String): Result<Pair<String, User>> {
-        return try {
-            Log.d("AuthRepository", "Attempting login for username: $usernameInput")
-            val querySnapshot = usersCollection
-                .whereEqualTo("username", usernameInput) // Ensure 'username' field exists and is indexed in Firestore
-                .limit(1)
-                .get()
-                .await()
+    suspend fun getCurrentUser(): Result<User> {
+        // Check guest mode first
+        if (isGuestMode && currentGuestUser != null) {
+            Log.d("AuthRepo", "Returning guest user: ${currentGuestUser!!.displayName}")
+            return Result.success(currentGuestUser!!)
+        }
 
-            if (querySnapshot.isEmpty) {
-                Log.w("AuthRepository", "Username '$usernameInput' not found in Firestore.")
-                throw Exception("Invalid username or password") // More generic error
+        val firebaseUser = auth.currentUser
+        Log.d("AuthRepo", "Getting current user - Firebase user: ${firebaseUser != null}, UID: ${firebaseUser?.uid}")
+
+        return if (firebaseUser != null) {
+            try {
+                Log.d("AuthRepo", "Fetching user document from Firestore for UID: ${firebaseUser.uid}")
+                val documentSnapshot = usersCollection.document(firebaseUser.uid).get().await()
+
+                if (documentSnapshot.exists()) {
+                    val role = documentSnapshot.getString("role") ?: "customer"
+                    Log.d("AuthRepo", "Found user document with role: $role")
+
+                    val user = when (role) {
+                        "staff" -> documentSnapshot.toObject(Staff::class.java)
+                        "customer" -> documentSnapshot.toObject(Customer::class.java)
+                        else -> documentSnapshot.toObject(Customer::class.java)
+                    }
+
+                    if (user != null) {
+                        Log.d("AuthRepo", "Successfully parsed user: ${user.displayName}, Role: ${user.role}")
+                        Result.success(user)
+                    } else {
+                        Log.e("AuthRepo", "Failed to parse user data - user object is null")
+                        Result.failure(Exception("Failed to parse user data"))
+                    }
+                } else {
+                    Log.e("AuthRepo", "User document not found in Firestore for UID: ${firebaseUser.uid}")
+                    Result.failure(Exception("User document not found"))
+                }
+            } catch (e: Exception) {
+                Log.e("AuthRepo", "Error getting current user: ${e.message}", e)
+                Result.failure(e)
             }
-
-            val userDocSnapshot = querySnapshot.documents[0]
-            val email = userDocSnapshot.getString("email")
-            if (email == null || email.isBlank()) {
-                Log.e("AuthRepository", "Email is null or blank for username '$usernameInput' in Firestore.")
-                throw Exception("User data configuration error.")
-            }
-
-            Log.d("AuthRepository", "Found email '$email' for username '$usernameInput'. Attempting Firebase Auth sign-in.")
-            val authResult = auth.signInWithEmailAndPassword(email, passwordInput).await()
-            val firebaseUser = authResult.user ?: throw Exception("Firebase Authentication failed after email/password check.")
-
-            // Fetch the complete User object from Firestore using the now confirmed UID
-            val user = userDocSnapshot.toObject(User::class.java) // UID is the document ID
-                ?: throw Exception("Error converting user data from Firestore for UID: ${firebaseUser.uid}")
-
-            Log.d("AuthRepository", "Login successful for UID: ${firebaseUser.uid}, DisplayName: ${user.displayName}")
-            Result.success(Pair(firebaseUser.uid, user))
-
-        } catch (e: Exception) {
-            Log.e("AuthRepository", "Login failed: ${e.message}", e)
-            Result.failure(e) // Forward the more specific or generic error
+        } else {
+            Log.d("AuthRepo", "No Firebase user logged in")
+            Result.failure(Exception("No user logged in"))
         }
     }
-
 
     suspend fun registerUser(
         username: String,
         email: String,
         password: String,
         displayName: String,
-        role: String // e.g., "customer", "staff"
-    ): Result<FirebaseUser> { // Return FirebaseUser to get UID easily
-        return try {
-            // Step 1: Check if username already exists
-            val usernameExists = usersCollection.whereEqualTo("username", username).limit(1).get().await()
-            if (!usernameExists.isEmpty) {
-                throw Exception("Username '$username' already taken.")
-            }
-            // Step 2: Check if email already exists (Firebase Auth will also do this, but good to check early)
-            // val emailExists = usersCollection.whereEqualTo("email", email).limit(1).get().await()
-            // if (!emailExists.isEmpty) {
-            // throw Exception("Email '$email' already registered.")
-            // }
+        role: String
+    ): Result<String> {
+        return when (role) {
+            "customer" -> registerCustomer(username, email, password, displayName)
+            "staff" -> registerStaff(username, email, password, displayName, "General Staff")
+            else -> Result.failure(Exception("Invalid role specified"))
+        }
+    }
 
+    suspend fun registerCustomer(
+        username: String,
+        email: String,
+        password: String,
+        displayName: String,
+        balance: Double = 0.0,
+        points: Int = 0
+    ): Result<String> {
+        return try {
+            val existingUser = usersCollection
+                .whereEqualTo("username", username)
+                .limit(1)
+                .get()
+                .await()
+
+            if (!existingUser.isEmpty) {
+                return Result.failure(Exception("Username already exists"))
+            }
 
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
-            val firebaseUser = authResult.user ?: throw Exception("Firebase user creation failed unexpectedly.")
+            val firebaseUser = authResult.user ?: throw Exception("User creation failed")
 
-            // Update Firebase Auth profile display name
-            val profileUpdates = UserProfileChangeRequest.Builder()
-                .setDisplayName(displayName)
-                .build()
-            firebaseUser.updateProfile(profileUpdates).await()
-
-            // Save comprehensive user data to Firestore, keyed by UID
-            val newUser = User(
-                // id = firebaseUser.uid, // If your User model has an 'id' field for the UID
-                username = username,
-                displayName = displayName,
-                email = email,
-                role = role,
-                points = 0,          // Default initial points
-                vouchers = 0         // Default initial vouchers
+            val customerData = hashMapOf(
+                "username" to username,
+                "displayName" to displayName,
+                "email" to email,
+                "role" to "customer",
+                "walletBalance" to balance,
+                "points" to points,
+                "vouchers" to 0,
+                "tier" to 0,
+                "preferredPaymentMethod" to null,
+                "deliveryAddresses" to emptyList<String>(),
+                "orderHistory" to emptyList<String>()
             )
-            usersCollection.document(firebaseUser.uid).set(newUser).await()
 
-            Log.d("AuthRepository", "Registration successful for UID: ${firebaseUser.uid}")
-            Result.success(firebaseUser)
+            usersCollection.document(firebaseUser.uid).set(customerData).await()
+            Result.success("Customer registration successful")
+
         } catch (e: Exception) {
-            // Firebase Auth throws specific exceptions like FirebaseAuthUserCollisionException for existing email
-            Log.e("AuthRepository", "Registration failed: ${e.message}", e)
+            Log.e("AuthRepo", "Customer registration failed: ${e.message}")
             Result.failure(e)
         }
     }
 
-    fun logoutUser() {
-        auth.signOut()
-        Log.d("AuthRepository", "User logged out")
+    suspend fun registerStaff(
+        username: String,
+        email: String,
+        password: String,
+        displayName: String,
+        position: String,
+        specialty: String? = null,
+        staffId: String? = null
+    ): Result<String> {
+        return try {
+            val existingUser = usersCollection
+                .whereEqualTo("username", username)
+                .limit(1)
+                .get()
+                .await()
+
+            if (!existingUser.isEmpty) {
+                return Result.failure(Exception("Username already exists"))
+            }
+
+            val authResult = auth.createUserWithEmailAndPassword(email, password).await()
+            val firebaseUser = authResult.user ?: throw Exception("User creation failed")
+
+            val staffData = hashMapOf(
+                "username" to username,
+                "displayName" to displayName,
+                "email" to email,
+                "role" to "staff",
+                "position" to position,
+                "specialty" to specialty,
+                "staffId" to staffId,
+                "staffSince" to System.currentTimeMillis().toString(),
+            )
+
+            usersCollection.document(firebaseUser.uid).set(staffData).await()
+            Result.success("Staff registration successful")
+
+        } catch (e: Exception) {
+            Log.e("AuthRepo", "Staff registration failed: ${e.message}")
+            Result.failure(e)
+        }
     }
 
-    // This is a local placeholder. For a real guest flow tied to Firestore, use loginAsGuest()
-    // and fetch the User object from the result.
-    @Deprecated("Use loginAsGuest() and its result, or fetch user data by guest UID if needed.", ReplaceWith("loginAsGuest()"))
-    fun getLocalPlaceholderGuestUser(): User {
-        return User(
-            username = "guest_local",
-            displayName = "Guest (Local)",
-            role = "guest"
-        )
+    // Simpler guest login that doesn't interfere with Firebase Auth
+    suspend fun loginAsGuest(): Result<Guest> {
+        return try {
+            // Don't sign out Firebase user - just set guest mode
+            val guestUser = Guest(
+                username = "guest",
+                displayName = "Guest",
+                email = "guest@local",
+                role = "guest"
+            )
+
+            isGuestMode = true
+            currentGuestUser = guestUser
+            saveGuestState(guestUser)
+            markGuestNotFirstTime() // Mark that guest has been used
+
+            Log.d("AuthRepo", "Guest login successful")
+            Result.success(guestUser)
+        } catch (e: Exception) {
+            Log.e("AuthRepo", "Guest login failed: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    // Check if this is a first-time guest (should go to login screen)
+    fun isFirstTimeGuest(): Boolean {
+        return prefs?.getBoolean(IS_FIRST_TIME_GUEST_KEY, true) ?: true
+    }
+
+    // Mark that guest has been used before (not first time anymore)
+    private fun markGuestNotFirstTime() {
+        prefs?.edit()?.apply {
+            putBoolean(IS_FIRST_TIME_GUEST_KEY, false)
+            apply()
+        }
+    }
+
+    // Check current authentication state
+    fun isUserLoggedIn(): Boolean {
+        val hasFirebaseUser = auth.currentUser != null
+        val isFirstTime = isFirstTimeGuest()
+        Log.d("AuthRepo", "Firebase user: $hasFirebaseUser, Guest mode: $isGuestMode, First time: $isFirstTime, UID: ${auth.currentUser?.uid}")
+
+        // If it's a first-time guest, they should go to login screen
+        if (isGuestMode && isFirstTime) {
+            Log.d("AuthRepo", "First-time guest detected, should go to login screen")
+            return false
+        }
+
+        return hasFirebaseUser || isGuestMode
+    }
+
+    fun isGuestUser(): Boolean {
+        return isGuestMode
+    }
+
+    fun logoutUser() {
+        auth.signOut()
+        clearGuestState()
+        isGuestMode = false
+        currentGuestUser = null
+
+        // Reset first-time guest flag so next time they'll go to login
+        prefs?.edit()?.apply {
+            putBoolean(IS_FIRST_TIME_GUEST_KEY, true)
+            apply()
+        }
+        Log.d("AuthRepo", "Logged out user and reset first-time guest flag")
+    }
+
+    // Update profile methods remain the same
+    suspend fun updateCustomerProfile(customer: Customer): Result<Unit> {
+        val firebaseUser = auth.currentUser
+        return if (firebaseUser != null && !isGuestMode) {
+            try {
+                val customerData = hashMapOf(
+                    "username" to customer.username,
+                    "displayName" to customer.displayName,
+                    "email" to customer.email,
+                    "role" to "customer",
+                    "walletBalance" to customer.walletBalance,
+                    "points" to customer.points,
+                    "vouchers" to customer.vouchers,
+                    "tier" to customer.tier,
+                    "preferredPaymentMethod" to customer.preferredPaymentMethod,
+                    "deliveryAddresses" to customer.deliveryAddresses
+                )
+
+                usersCollection.document(firebaseUser.uid).update(customerData).await()
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        } else {
+            Result.failure(Exception("No authenticated user"))
+        }
+    }
+
+    suspend fun updateStaffProfile(staff: Staff): Result<Unit> {
+        val firebaseUser = auth.currentUser
+        return if (firebaseUser != null && !isGuestMode) {
+            try {
+                val staffData = mapOf<String, Any>(
+                    "username" to staff.username,
+                    "displayName" to staff.displayName,
+                    "email" to staff.email,
+                    "role" to "staff",
+                    "position" to staff.position,
+                    "specialty" to (staff.specialty ?: ""),
+                    "staffId" to (staff.staffId ?: ""),
+                    "staffSince" to staff.staffSince,
+                )
+
+                usersCollection.document(firebaseUser.uid).update(staffData).await()
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        } else {
+            Result.failure(Exception("No authenticated user"))
+        }
+    }
+
+    // Query methods remain the same
+    suspend fun getAllStaff(): Result<List<Staff>> {
+        return try {
+            val querySnapshot = usersCollection
+                .whereEqualTo("role", "staff")
+                .get()
+                .await()
+
+            val staffList = querySnapshot.documents.mapNotNull { doc ->
+                doc.toObject(Staff::class.java)
+            }
+
+            Result.success(staffList)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getAllCustomers(): Result<List<Customer>> {
+        return try {
+            val querySnapshot = usersCollection
+                .whereEqualTo("role", "customer")
+                .get()
+                .await()
+
+            val customerList = querySnapshot.documents.mapNotNull { doc ->
+                doc.toObject(Customer::class.java)
+            }
+
+            Result.success(customerList)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getCustomersByTier(tier: Int): Result<List<Customer>> {
+        return try {
+            val querySnapshot = usersCollection
+                .whereEqualTo("role", "customer")
+                .whereEqualTo("tier", tier)
+                .get()
+                .await()
+
+            val customerList = querySnapshot.documents.mapNotNull { doc ->
+                doc.toObject(Customer::class.java)
+            }
+
+            Result.success(customerList)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

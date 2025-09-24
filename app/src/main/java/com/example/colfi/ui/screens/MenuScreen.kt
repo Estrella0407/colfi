@@ -1,6 +1,7 @@
-// MenuScreen.kt
+// MenuScreen.kt - With confirmation popup and floating cart button
 package com.example.colfi.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,13 +23,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -44,20 +51,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.colfi.DrawableMapper
 import com.example.colfi.data.model.CartItem
 import com.example.colfi.data.model.MenuItem
 import com.example.colfi.data.repository.CartRepository
+import com.example.colfi.ui.theme.DarkBrown1
 import com.example.colfi.ui.theme.LightBrown2
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.CartViewModel
-import com.example.colfi.ui.viewmodel.CartViewModelFactory
 import com.example.colfi.ui.viewmodel.MenuViewModel
 
 @Composable
@@ -67,21 +76,21 @@ fun MenuScreen(
     cartViewModel: CartViewModel,
     onNavigateToHome: () -> Unit,
     onNavigateToOrders: () -> Unit,
-    onNavigateToProfile: () -> Unit,
+    onNavigateToCustomerProfile: () -> Unit,
     onNavigateToCart: () -> Unit,
     modifier: Modifier = Modifier,
-    cartRepository: CartRepository
+    cartRespository: CartRepository
 ) {
     val uiState by menuViewModel.uiState.collectAsState()
-    var showPopup by remember { mutableStateOf(false) }
+    val cartUiState by cartViewModel.uiState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
+    var showConfirmationDialog by remember { mutableStateOf(false) }
     var selectedMenuItemForPopup by remember { mutableStateOf<MenuItem?>(null) }
-    val cartViewModel: CartViewModel = viewModel(factory = CartViewModelFactory(cartRepository))
+    var lastAddedItem by remember { mutableStateOf<CartItem?>(null) }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            // keep these if you use accompanist / Material Insets; if they are unresolved remove them
             .statusBarsPadding()
             .navigationBarsPadding()
             .background(LightCream1)
@@ -89,12 +98,13 @@ fun MenuScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 56.dp)
         ) {
             MenuHeader()
 
             Row(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
             ) {
                 // Left side - Categories
                 Column(
@@ -116,7 +126,7 @@ fun MenuScreen(
                     }
                 }
 
-                // Divider (use simple Box if you don't have VerticalDivider)
+                // Divider
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -126,7 +136,9 @@ fun MenuScreen(
 
                 // Right side - Menu items
                 Box(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
                 ) {
                     when {
                         uiState.isLoading -> {
@@ -169,7 +181,7 @@ fun MenuScreen(
                             MenuItemsList(
                                 menuItems = uiState.menuItems,
                                 onItemDetailClick = { item ->
-                                    println("hello world")
+                                    println("Item detail clicked: ${item.name}")
                                 },
                                 onAddToCartClick = { item ->
                                     selectedMenuItemForPopup = item
@@ -178,153 +190,262 @@ fun MenuScreen(
                             )
                         }
                     }
-
-                    if (showDialog && selectedMenuItemForPopup != null) {
-                        ItemSelectionPopUp(
-                            menuItem = selectedMenuItemForPopup!!,
-                            onDismiss = {
-                                showDialog = false
-                                selectedMenuItemForPopup = null
-                            },
-                            onProceedToCart = { cartItem ->
-                                cartViewModel.addToCart(cartItem)
-                                showDialog = false
-                                selectedMenuItemForPopup = null
-                                onNavigateToCart()
-                            }
-                        )
-                    }
                 }
             }
         }
 
-
-        @Composable
-        fun ItemSelectionPopUp(
-            menuItem: MenuItem,
-            onDismiss: () -> Unit,
-            onProceedToCart: (CartItem) -> Unit
-        ) {
-            var quantity by remember { mutableIntStateOf(1) }
-            var selectedTemperature by remember { mutableStateOf<String?>(null) }
-            var selectedSugarLevel by remember { mutableStateOf<String?>(null) }
-
-            val isTemperatureApplicable = menuItem.category in listOf("Coffee", "Tea")
-            val isSugarLevelApplicable = menuItem.category in listOf("Coffee", "Tea", "Beverages")
-
-            AlertDialog(
-                onDismissRequest = onDismiss,
-                title = {
-                    Text(
-                        menuItem.name,
-                        fontFamily = colfiFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
-                    )
-                },
-                text = {
-                    Column(horizontalAlignment = Alignment.Start) {
-                        AsyncImage(
-                            model = if (menuItem.imageURL.isNotEmpty()) menuItem.imageURL else "https://via.placeholder.com/150x150?text=No+Image",
-                            contentDescription = menuItem.name,
-                            modifier = Modifier
-                                .height(150.dp)
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            menuItem.description,
-                            fontFamily = colfiFont,
-                            fontSize = 14.sp,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Quantity
-                        Text("Quantity:", fontFamily = colfiFont, fontWeight = FontWeight.SemiBold)
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            OutlinedButton(
-                                onClick = { if (quantity > 1) quantity-- },
-                                shape = CircleShape
-                            ) { Text("-") }
-
-                            Text(
-                                text = quantity.toString(),
-                                fontSize = 18.sp,
-                                fontFamily = colfiFont,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-
-                            OutlinedButton(
-                                onClick = { quantity++ },
-                                shape = CircleShape
-                            ) { Text("+") }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Total
-                        Text(
-                            text = "Total: RM ${String.format("%.2f", menuItem.price * quantity)}",
-                            fontFamily = colfiFont,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.End)
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            if (isTemperatureApplicable && selectedTemperature == null) {
-                                println("Please select temperature")
-                                return@Button
+        // Floating Cart Button
+        if (cartUiState.itemCount > 0) {
+            FloatingActionButton(
+                onClick = onNavigateToCart,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 80.dp), // Above bottom navigation
+                containerColor = Color(0xFFD2B48C),
+                contentColor = Color.Black
+            ) {
+                BadgedBox(
+                    badge = {
+                        if (cartUiState.itemCount > 0) {
+                            Badge(
+                                containerColor = Color.Red,
+                                contentColor = Color.White
+                            ) {
+                                Text(
+                                    text = cartUiState.itemCount.toString(),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
-                            val cartItem = CartItem(
-                                menuItem = menuItem,
-                                quantity = quantity
-                            )
-                            onProceedToCart(cartItem)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(12.dp)
-                    ) { Text("Add to Cart", fontSize = 16.sp) }
-                },
-                dismissButton = {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Cancel") }
-                },
-                shape = RoundedCornerShape(20.dp),
-                containerColor = Color.White
-            )
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingCart,
+                        contentDescription = "Cart",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
         }
-
 
         // Bottom Navigation Bar
         BottomNavigation(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .navigationBarsPadding(),
+                .padding(top = 8.dp),
             onMenuClick = { /* Already on menu */ },
             onOrdersClick = onNavigateToOrders,
             onHomeClick = onNavigateToHome,
-            onProfileClick = onNavigateToProfile,
+            onCustomerProfileClick = onNavigateToCustomerProfile,
             isHomeSelected = false,
             isMenuSelected = true,
             isOrdersSelected = false,
-            isProfileSelected = false
+            isCustomerProfileSelected = false
         )
+
+        // Item Selection Popup
+        if (showDialog && selectedMenuItemForPopup != null) {
+            ItemSelectionPopUp(
+                menuItem = selectedMenuItemForPopup!!,
+                onDismiss = {
+                    showDialog = false
+                    selectedMenuItemForPopup = null
+                },
+                onProceedToCart = { cartItem ->
+                    println("=== CALLING ADD TO CART ===")
+                    println("CartItem details:")
+                    println("- Name: ${cartItem.menuItem.name}")
+                    println("- Temperature: ${cartItem.selectedTemperature}")
+                    println("- Sugar Level: ${cartItem.selectedSugarLevel}")
+                    println("- Quantity: ${cartItem.quantity}")
+                    println("- Price: ${cartItem.menuItem.price}")
+
+                    cartViewModel.addToCart(cartItem)
+                    lastAddedItem = cartItem
+
+                    showDialog = false
+                    selectedMenuItemForPopup = null
+                    showConfirmationDialog = true
+                }
+            )
+        }
+
+        // Confirmation Dialog
+        if (showConfirmationDialog && lastAddedItem != null) {
+            ConfirmationDialog(
+                cartItem = lastAddedItem!!,
+                onDismiss = {
+                    showConfirmationDialog = false
+                    lastAddedItem = null
+                },
+                onContinueShopping = {
+                    showConfirmationDialog = false
+                    lastAddedItem = null
+                },
+                onGoToCart = {
+                    showConfirmationDialog = false
+                    lastAddedItem = null
+                    onNavigateToCart()
+                }
+            )
+        }
+
+        // Show error messages
+        if (cartUiState.errorMessage.isNotEmpty()) {
+            Text(
+                text = "Cart Error: ${cartUiState.errorMessage}",
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+                    .background(Color.Red.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
+                    .padding(8.dp),
+                color = Color.White,
+                fontSize = 12.sp
+            )
+        }
     }
+}
+
+@Composable
+fun ConfirmationDialog(
+    cartItem: CartItem,
+    onDismiss: () -> Unit,
+    onContinueShopping: () -> Unit,
+    onGoToCart: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShoppingCart,
+                    contentDescription = null,
+                    tint = DarkBrown1,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Added to Cart!",
+                    fontFamily = colfiFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    color = Color(0xFFD2B48C)
+                )
+            }
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = cartItem.menuItem.name,
+                    fontFamily = colfiFont,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
+                )
+
+                if (cartItem.options.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = cartItem.options,
+                        fontFamily = colfiFont,
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Quantity:",
+                        fontFamily = colfiFont,
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        text = "${cartItem.quantity}",
+                        fontFamily = colfiFont,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Total:",
+                        fontFamily = colfiFont,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "RM ${String.format("%.2f", cartItem.totalPrice)}",
+                        fontFamily = colfiFont,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFD2B48C)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Button(
+                    onClick = onGoToCart,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFD2B48C)
+                    ),
+                    contentPadding = PaddingValues(12.dp)
+                ) {
+                    Text(
+                        "Go to Cart",
+                        fontFamily = colfiFont,
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedButton(
+                    onClick = onContinueShopping,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color(0xFFD2B48C)
+                    ),
+                    contentPadding = PaddingValues(12.dp)
+                ) {
+                    Text(
+                        "Continue Shopping",
+                        fontFamily = colfiFont,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        },
+        dismissButton = null,
+        shape = RoundedCornerShape(16.dp),
+        containerColor = Color.White
+    )
 }
 
 @Composable
@@ -451,9 +572,16 @@ fun MenuItemCard(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Image
-            AsyncImage(
-                model = if (menuItem.imageURL.isNotEmpty()) menuItem.imageURL else "https://via.placeholder.com/100x100?text=No+Image",
+            // Image from drawable resource
+            Image(
+                painter = painterResource(
+                    id = if (menuItem.imageName.isNotEmpty()) {
+                        menuItem.imageResId
+                    } else {
+                        // Fallback to category-based image or default
+                        DrawableMapper.getDrawableForImageName(menuItem.category)
+                    }
+                ),
                 contentDescription = menuItem.name,
                 modifier = Modifier
                     .size(100.dp)
@@ -536,9 +664,10 @@ fun ItemSelectionPopUp(
     var quantity by remember { mutableIntStateOf(1) }
     var selectedTemperature by remember { mutableStateOf<String?>(null) }
     var selectedSugarLevel by remember { mutableStateOf<String?>(null) }
+    var showValidationError by remember { mutableStateOf(false) }
 
-    val isTemperatureApplicable = menuItem.category in listOf("Coffee", "Tea")
-    val isSugarLevelApplicable = menuItem.category in listOf("Coffee", "Tea", "Beverages")
+    val isTemperatureApplicable = menuItem.category.lowercase() in listOf("coffee", "tea")
+    val isSugarLevelApplicable = menuItem.category.lowercase() in listOf("coffee", "tea", "non-coffee")
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -552,15 +681,22 @@ fun ItemSelectionPopUp(
         },
         text = {
             Column(horizontalAlignment = Alignment.Start) {
-                AsyncImage(
-                    model = if (menuItem.imageURL.isNotEmpty()) menuItem.imageURL else "https://via.placeholder.com/150x150?text=No+Image",
+                Image(
+                    painter = painterResource(
+                        id = if (menuItem.imageName.isNotEmpty()) {
+                            menuItem.imageResId
+                        } else {
+                            // Fallback to category-based image or default
+                            DrawableMapper.getDrawableForImageName(menuItem.category)
+                        }
+                    ),
                     contentDescription = menuItem.name,
                     modifier = Modifier
-                        .height(150.dp)
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp)),
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop
                 )
+
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
@@ -578,9 +714,12 @@ fun ItemSelectionPopUp(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        listOf("Hot", "Ice").forEach { temp ->
+                        CartItem.TEMPERATURE_OPTIONS.forEach { temp ->
                             Button(
-                                onClick = { selectedTemperature = temp },
+                                onClick = {
+                                    selectedTemperature = temp
+                                    showValidationError = false
+                                },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (selectedTemperature == temp)
                                         MaterialTheme.colorScheme.primary
@@ -603,9 +742,12 @@ fun ItemSelectionPopUp(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        listOf("0%", "50%", "100%").forEach { sugar ->
+                        CartItem.SUGAR_LEVEL_OPTIONS.forEach { sugar ->
                             Button(
-                                onClick = { selectedSugarLevel = sugar },
+                                onClick = {
+                                    selectedSugarLevel = sugar
+                                    showValidationError = false
+                                },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (selectedSugarLevel == sugar)
                                         MaterialTheme.colorScheme.primary
@@ -647,6 +789,17 @@ fun ItemSelectionPopUp(
                 }
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // Show validation error if needed
+                if (showValidationError) {
+                    Text(
+                        text = "Please select all required options",
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        fontFamily = colfiFont
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
                 Text(
                     text = "Total: RM ${String.format("%.2f", menuItem.price * quantity)}",
                     fontFamily = colfiFont,
@@ -659,14 +812,18 @@ fun ItemSelectionPopUp(
         confirmButton = {
             Button(
                 onClick = {
-                    if (isTemperatureApplicable && selectedTemperature == null) {
-                        // required selection
-                        println("Please select temperature")
+                    // Validate required selections
+                    if ((isTemperatureApplicable && selectedTemperature == null) ||
+                        (isSugarLevelApplicable && selectedSugarLevel == null)) {
+                        showValidationError = true
                         return@Button
                     }
+
                     // Build CartItem and return it
                     val cartItem = CartItem(
                         menuItem = menuItem,
+                        selectedTemperature = selectedTemperature,
+                        selectedSugarLevel = selectedSugarLevel,
                         quantity = quantity
                     )
                     onProceedToCart(cartItem)

@@ -1,9 +1,11 @@
 // HomeViewModel.kt
 package com.example.colfi.ui.viewmodel
 
-import android.util.Log
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.colfi.data.model.Customer
+import com.example.colfi.data.model.Guest
 import com.example.colfi.data.model.User
 import com.example.colfi.data.repository.AuthRepository
 import com.example.colfi.ui.state.HomeUiState
@@ -13,10 +15,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
-    private val authRepository: AuthRepository = AuthRepository() // Using default constructor
-) : ViewModel() {
+    application: Application
+) : AndroidViewModel(application) {
+    private val authRepository: AuthRepository = AuthRepository(application.applicationContext)
 
-    private val _uiState = MutableStateFlow(HomeUiState(isLoading = true)) // Start with loading true
+    private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val quotes = listOf(
@@ -27,61 +30,163 @@ class HomeViewModel(
         "Fall in Love, One Sip at a Time."
     )
 
-    fun initialize(uid: String) { // Accepts UID
-        Log.d("HomeViewModel", "Initializing for UID: $uid")
+    init {
+        loadCurrentUser()
+    }
+
+    private fun loadCurrentUser() {
         _uiState.value = _uiState.value.copy(
             isLoading = true,
             randomQuote = quotes.random(),
-            user = null // Clear previous user to ensure fresh load/display
+            errorMessage = null,
+            shouldNavigateToLogin = false
         )
 
-        // Handle explicit "Guest" case based on a placeholder UID if your guest login returns one
-        // Or if the UID passed for a guest is a specific known string.
-        if (uid == "GUEST_USER_UID_PLACEHOLDER" || uid.startsWith("guest_anonymous_")) { // Example guest UID check
-            Log.d("HomeViewModel", "Handling as Guest user for UID: $uid")
-            // For a guest that has an anonymous UID and a Firestore doc:
-            viewModelScope.launch {
-                val guestUserObject = authRepository.getUserDataByUid(uid) // Try to fetch if guest data is in Firestore
-                _uiState.value = _uiState.value.copy(
-                    user = guestUserObject ?: User(displayName = "Guest", role="guest"), // Fallback guest
-                    isLoading = false
-                )
-            }
-            return
-        }
+        viewModelScope.launch {
+            val result = authRepository.getCurrentUser()
 
+            result.fold(
+                onSuccess = { user ->
+                    when (user) {
+                        is Customer -> {
+                            _uiState.value = _uiState.value.copy(
+                                customer = user,
+                                guest = null,
+                                user = user as User,
+                                isGuest = false,
+                                isLoading = false,
+                                errorMessage = null,
+                                shouldNavigateToLogin = false
+                            )
+                        }
+                        is Guest -> {
+                            _uiState.value = _uiState.value.copy(
+                                customer = null,
+                                guest = user,
+                                user = user as User,
+                                isGuest = true,
+                                isLoading = false,
+                                errorMessage = null,
+                                shouldNavigateToLogin = false
+                            )
+                        }
+                        else -> {
+                            // Staff or other user types shouldn't access customer home
+                            // Navigate to login instead of showing error
+                            _uiState.value = _uiState.value.copy(
+                                customer = null,
+                                guest = null,
+                                user = null,
+                                isGuest = false,
+                                isLoading = false,
+                                errorMessage = null,
+                                shouldNavigateToLogin = true
+                            )
+                        }
+                    }
+                },
+                onFailure = { exception ->
+                    // FIXED: Navigate to login instead of showing error
+                    if (exception.message?.contains("No user logged in") == true ||
+                        exception.message?.contains("User document not found") == true ||
+                        exception.message?.contains("Access denied") == true) {
+
+                        _uiState.value = _uiState.value.copy(
+                            customer = null,
+                            guest = null,
+                            user = null,
+                            isGuest = false,
+                            isLoading = false,
+                            errorMessage = null,
+                            shouldNavigateToLogin = true
+
+                        )
+                    } else {
+                        // For other errors, show error with retry
+                        _uiState.value = _uiState.value.copy(
+                            customer = null,
+                            guest = null,
+                            user = null,
+                            isGuest = false,
+                            isLoading = false,
+                            errorMessage = exception.message ?: "Failed to load user data",
+                            shouldNavigateToLogin = false
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    // Method to refresh user data (for pull-to-refresh or manual refresh)
+    fun refreshUserData() {
+        loadCurrentUser()
+    }
+
+    // Method to handle guest login
+    fun continueAsGuest() {
+        _uiState.value = _uiState.value.copy(isLoading = true)
 
         viewModelScope.launch {
-            try {
-                // Fetch the full User object from Firestore using the UID
-                val userFromFirestore: User? = authRepository.getUserDataByUid(uid)
+            val result = authRepository.loginAsGuest()
 
-                if (userFromFirestore != null) {
-                    Log.d("HomeViewModel", "Successfully fetched user data for UID $uid: ${userFromFirestore.displayName}")
+            result.fold(
+                onSuccess = { guest ->
                     _uiState.value = _uiState.value.copy(
-                        user = userFromFirestore,
-                        isLoading = false
-                    )
-                } else {
-                    Log.w("HomeViewModel", "No user data found in Firestore for UID: $uid. User might be 'Guest' or new.")
-                    // If it's not an explicit guest, but user data isn't found, decide on behavior.
-                    // Perhaps the user from Firebase Auth is the source of truth for display name initially
-                    // if Firestore doc creation failed or is pending.
-                    // For now, setting user to null if not found.
-                    _uiState.value = _uiState.value.copy(
-                        user = null, // Or a default User object
+                        customer = null,
+                        guest = guest,
+                        user = guest as User,
+                        isGuest = true,
                         isLoading = false,
-                        errorMessage = "User profile not found in database."
+                        errorMessage = null,
+                        shouldNavigateToLogin = false
+                    )
+                },
+                onFailure = { exception ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = exception.message ?: "Failed to continue as guest",
+                        shouldNavigateToLogin = false
                     )
                 }
-            } catch (e: Exception) {
-                Log.e("HomeViewModel", "Error fetching user data for UID $uid from Firestore", e)
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    user = null,
-                    errorMessage = "Error loading user profile: ${e.message}"
-                )
-            }
+            )
         }
+    }
+
+    // Get display name for UI
+    fun getDisplayName(): String {
+        return _uiState.value.customer?.displayName
+            ?: _uiState.value.guest?.displayName
+            ?: "User"
+    }
+
+    // Get wallet balance (only for customers)
+    fun getWalletBalance(): Double {
+        return _uiState.value.customer?.walletBalance ?: 0.0
+    }
+
+    // Get loyalty points (only for customers)
+    fun getLoyaltyPoints(): Int {
+        return _uiState.value.customer?.points ?: 0
+    }
+
+    // Get user tier (only for customers)
+    fun getUserTier(): Int {
+        return _uiState.value.customer?.tier ?: 0
+    }
+
+    // Check if user has enough balance for a purchase
+    fun hasEnoughBalance(amount: Double): Boolean {
+        return getWalletBalance() >= amount
+    }
+
+    // Clear error message
+    fun clearErrorMessage() {
+        _uiState.value = _uiState.value.copy(errorMessage = null)
+    }
+
+    // Handle navigation to login
+    fun onNavigateToLoginHandled() {
+        _uiState.value = _uiState.value.copy(shouldNavigateToLogin = false)
     }
 }

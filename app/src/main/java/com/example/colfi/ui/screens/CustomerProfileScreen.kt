@@ -15,20 +15,20 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
-import com.example.colfi.ui.viewmodel.ProfileViewModel
+import com.example.colfi.ui.viewmodel.CustomerProfileViewModel
 import com.example.colfi.ui.viewmodel.WalletViewModel
 
 @Composable
-fun ProfileScreen(
+fun CustomerProfileScreen(
     userName: String,
     onNavigateToMenu: () -> Unit,
     onNavigateToHome: () -> Unit,
     onNavigateToLogin: () -> Unit,
     onNavigateToOrders: () -> Unit,
-    viewModel: ProfileViewModel = viewModel(),
+    viewModel: CustomerProfileViewModel = viewModel(),
     walletViewModel: WalletViewModel = viewModel()
 ) {
-    val user by viewModel.user.collectAsState()
+    val user by viewModel.customer.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val walletUiState by walletViewModel.uiState.collectAsState()
@@ -43,7 +43,9 @@ fun ProfileScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 56.dp) // Adjust for bottom navigation height
         ) {
             Text(
                 text = "Profile",
@@ -67,7 +69,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Email: ${user!!.email}", fontFamily = colfiFont)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Wallet: RM ${String.format("%.2f", walletUiState.balance)}", fontFamily = colfiFont)
+                    Text("Wallet: RM ${user!!.walletBalance}", fontFamily = colfiFont)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Points: ${user!!.points}", fontFamily = colfiFont)
                     Spacer(modifier = Modifier.height(8.dp))
@@ -76,7 +78,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     Button(
-                        onClick = { viewModel.logout(onNavigateToLogin) },
+                        onClick = { viewModel.logout() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Logout", fontFamily = colfiFont)
@@ -86,9 +88,12 @@ fun ProfileScreen(
                     Text("No user data available")
                 }
             }
+            
+            Spacer(modifier = Modifier.weight(1f))
+
         }
 
-        // Bottom Navigation Bar
+        // Bottom Navigation Bar - Fixed at bottom
         BottomNavigation(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -97,11 +102,11 @@ fun ProfileScreen(
             onHomeClick = onNavigateToHome,
             onMenuClick = onNavigateToMenu,
             onOrdersClick = onNavigateToOrders,
-            onProfileClick = { },
+            onCustomerProfileClick = { },
             isHomeSelected = false,
             isMenuSelected = false,
             isOrdersSelected = false,
-            isProfileSelected = true
+            isCustomerProfileSelected = true
         )
     }
 }

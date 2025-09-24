@@ -3,40 +3,33 @@ package com.example.colfi.ui.screens
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-// import androidx.compose.foundation.clickable // Not directly used, can be removed if not needed by other elements in this file
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color // Import Color
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White // Already here, good
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.ui.viewmodel.WalletViewModel
 import com.example.colfi.ui.theme.*
-// Ensure WalletUiState is imported explicitly if needed, though often inferred.
-// import com.example.colfi.ui.state.WalletUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletScreen(
-    userName: String, // userName is used for viewModel.initialize() and for display
+    userName: String,
     viewModel: WalletViewModel = viewModel(),
     onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Load wallet on screen start using the userName passed to this screen.
-    // The WalletViewModel's initialize function currently uses this userName.
-    LaunchedEffect(userName) {
-        Log.d(
-            "WalletScreen",
-            "Initializing WalletViewModel with userName for initial read: $userName"
-        )
-        viewModel.initialize(userName)
+    // Initialize the wallet when the screen is first displayed
+    LaunchedEffect(Unit) {
+        Log.d("WalletScreen", "Initializing wallet for user: $userName")
+        viewModel.initialize() // Call without parameters
     }
 
     Scaffold(
@@ -48,34 +41,33 @@ fun WalletScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors( // Optional: Theming for TopAppBar
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = LightCream1,
                     titleContentColor = DarkBrown1,
                     navigationIconContentColor = DarkBrown1
                 )
             )
         }
-    ) { paddingValues -> // Renamed 'padding' to 'paddingValues' for clarity as per Material3 convention
+    ) { paddingValues ->
         Column(
             modifier = Modifier
-                .padding(paddingValues) // Apply padding from Scaffold
-                .padding(16.dp) // Apply additional screen-specific padding
+                .padding(paddingValues)
+                .padding(16.dp)
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Log.d("WalletScreenDebug", "Composing WalletScreen. isLoading: ${uiState.isLoading}, selectedMethod: ${uiState.selectedMethod}, balance: ${uiState.balance}, message: ${uiState.message}")
-            // Simple Loading Indicator (visible only when isLoading is true and no specific message is shown)
-            if (uiState.isLoading && uiState.message == null) {
+            // Show loading indicator
+            if (uiState.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.padding(vertical = 20.dp),
-                    color = DarkBrown1 // Use a theme color
+                    color = DarkBrown1
                 )
             }
 
             Text(
-                "Hello, $userName", // Display the userName passed to the screen
+                "Hello, $userName",
                 fontFamily = colfiFont,
-                style = MaterialTheme.typography.titleMedium // Use MaterialTheme typography
+                style = MaterialTheme.typography.titleMedium
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -83,81 +75,82 @@ fun WalletScreen(
                 fontFamily = colfiFont,
                 fontWeight = FontWeight.Bold,
                 fontSize = MaterialTheme.typography.headlineMedium.fontSize,
-                color = DarkBrown1 // Use a theme color
+                color = DarkBrown1
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Log.d("WalletScreenDebug", "Before 'Choose Payment Method' Row. isLoading: ${uiState.isLoading}")
-            Text(
-                "Choose Payment Method",
-                fontFamily = colfiFont,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleSmall
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(
-                    16.dp,
-                    Alignment.CenterHorizontally
-                ), // Spaced by and centered
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Log.d("WalletScreenDebug", "Composing Payment Method Row. Number of chips expected: 2")
-                FilterChip(
-                    selected = true,
-                    onClick = { Log.d("FilterChipTest", "Chip clicked") },
-                    label = { Text("Test Chip") },
-                    enabled = true)
+            // Only show wallet features if user is logged in and wallet is loaded
+            if (!uiState.isLoading && uiState.message?.contains("Please log in") != true) {
+                // Your wallet content here (payment methods, top-up buttons, etc.)
+                Text(
+                    "Choose Payment Method",
+                    fontFamily = colfiFont,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    FilterChip(
+                        selected = true,
+                        onClick = { },
+                        label = { Text("Test Chip") }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    "Select Top-Up Amount",
+                    fontFamily = colfiFont,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    TopUpButton(
+                        amount = 20.0,
+                        onTopUp = { amountValue -> viewModel.topUp(amountValue) },
+                        isLoading = uiState.isLoading
+                    )
+                    TopUpButton(
+                        amount = 40.0,
+                        onTopUp = { amountValue -> viewModel.topUp(amountValue) },
+                        isLoading = uiState.isLoading
+                    )
+                    TopUpButton(
+                        amount = 60.0,
+                        onTopUp = { amountValue -> viewModel.topUp(amountValue) },
+                        isLoading = uiState.isLoading
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                "Select Top-Up Amount",
-                fontFamily = colfiFont,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleSmall
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                horizontalArrangement = Arrangement.SpaceEvenly, // Or Arrangement.spacedBy(8.dp)
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                TopUpButton(
-                    amount = 20.0,
-                    onTopUp = { amountValue -> viewModel.topUp(amountValue) },
-                    isLoading = uiState.isLoading
-                )
-                TopUpButton(
-                    amount = 40.0,
-                    onTopUp = { amountValue -> viewModel.topUp(amountValue) },
-                    isLoading = uiState.isLoading
-                )
-                TopUpButton(
-                    amount = 60.0,
-                    onTopUp = { amountValue -> viewModel.topUp(amountValue) },
-                    isLoading = uiState.isLoading
-                )
-            }
-
-            // Show success/failure message from uiState
+            // Show error/success messages
             uiState.message?.let { msg ->
-                Spacer(modifier = Modifier.height(24.dp)) // Increased spacer
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = msg,
                     fontFamily = colfiFont,
                     color = if (msg.contains("successful", ignoreCase = true)) {
-                        Color(0xFF006400) // Darker green for success
+                        Color(0xFF006400)
                     } else {
-                        MaterialTheme.colorScheme.error // Use theme error color for failure
+                        MaterialTheme.colorScheme.error
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(horizontal = 8.dp)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                TextButton(onClick = { viewModel.clearMessage() }) {
-                    Text("OK", color = DarkBrown1, fontFamily = colfiFont)
+                if (!msg.contains("Please log in")) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextButton(onClick = { viewModel.clearMessage() }) {
+                        Text("OK", color = DarkBrown1, fontFamily = colfiFont)
+                    }
                 }
             }
         }

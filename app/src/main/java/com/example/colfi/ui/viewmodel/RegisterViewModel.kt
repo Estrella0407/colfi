@@ -1,15 +1,14 @@
+// RegisterViewModel.kt
 package com.example.colfi.ui.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.colfi.data.repository.AuthRepository
 import com.example.colfi.ui.state.RegisterUiState
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class RegisterViewModel(
@@ -17,104 +16,112 @@ class RegisterViewModel(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RegisterUiState())
-    val uiState: StateFlow<RegisterUiState> = _uiState
+    val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
 
     fun onUsernameChange(newUsername: String) {
-        _uiState.value = _uiState.value.copy(username = newUsername)
+        _uiState.update { it.copy(username = newUsername, errorMessage = null) }
     }
 
     fun onEmailChange(newEmail: String) {
-        _uiState.value = _uiState.value.copy(email = newEmail)
+        _uiState.update { it.copy(email = newEmail, errorMessage = null) }
     }
 
     fun onPasswordChange(newPassword: String) {
-        _uiState.value = _uiState.value.copy(password = newPassword)
+        _uiState.update { it.copy(password = newPassword, errorMessage = null) }
     }
 
     fun onConfirmPasswordChange(newConfirmPassword: String) {
-        _uiState.value = _uiState.value.copy(confirmPassword = newConfirmPassword)
+        _uiState.update { it.copy(confirmPassword = newConfirmPassword, errorMessage = null) }
     }
 
-    // Add method to set role
     fun setRole(role: String) {
-        _uiState.value = _uiState.value.copy(role = role)
+        _uiState.update { it.copy(role = role, errorMessage = null) }
     }
 
     fun togglePasswordVisibility() {
-        _uiState.value = _uiState.value.copy(
-            isPasswordVisible = !_uiState.value.isPasswordVisible
-        )
+        _uiState.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
     }
 
     fun toggleConfirmPasswordVisibility() {
-        _uiState.value = _uiState.value.copy(
-            isConfirmPasswordVisible = !_uiState.value.isConfirmPasswordVisible
-        )
+        _uiState.update { it.copy(isConfirmPasswordVisible = !it.isConfirmPasswordVisible) }
+    }
+
+    // FIXED: Proper email validation
+    private fun isValidEmail(email: String): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    // FIXED: Password strength validation
+    private fun isValidPassword(password: String): Boolean {
+        return password.length >= 6 // Firebase Auth minimum
     }
 
     fun registerUser() {
         val state = _uiState.value
 
-        if (state.username.isBlank() || state.email.isBlank() ||
-            state.password.isBlank() || state.confirmPassword.isBlank()
-        ) {
-            _uiState.value = state.copy(errorMessage = "All fields are required")
-            return
-        }
+        // Validation
+        when {
+            state.username.isBlank() || state.email.isBlank() ||
+                    state.password.isBlank() || state.confirmPassword.isBlank() -> {
+                _uiState.update { it.copy(errorMessage = "All fields are required") }
+                return
+            }
 
-        if (state.role.isBlank()) {
-            _uiState.value = state.copy(errorMessage = "Role must be selected")
-            return
-        }
+            state.role.isBlank() -> {
+                _uiState.update { it.copy(errorMessage = "Role must be selected") }
+                return
+            }
 
-        if (state.password != state.confirmPassword) {
-            _uiState.value = state.copy(errorMessage = "Passwords do not match")
-            return
+            !isValidEmail(state.email) -> {
+                _uiState.update { it.copy(errorMessage = "Please enter a valid email address") }
+                return
+            }
+
+            !isValidPassword(state.password) -> {
+                _uiState.update { it.copy(errorMessage = "Password must be at least 6 characters long") }
+                return
+            }
+
+            state.password != state.confirmPassword -> {
+                _uiState.update { it.copy(errorMessage = "Passwords do not match") }
+                return
+            }
         }
 
         viewModelScope.launch {
-            _uiState.value = state.copy(isLoading = true, errorMessage = null)
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             val result = authRepository.registerUser(
                 username = state.username,
                 email = state.email,
                 password = state.password,
-                displayName = state.username,
-                role = state.role // Pass role to repository
+                displayName = state.username, // You might want to add a separate displayName field
+                role = state.role
             )
 
-            if (result.isSuccess) {
-                val firebaseUser = result.getOrNull()
-                val userId = firebaseUser?.uid
-
-                // ✅ Only create wallet for customer role
-                if (state.role == "customer" && userId != null) {
-                    val db = FirebaseFirestore.getInstance()
-                    val walletData = hashMapOf(
-                        "balance" to 0.0
+            _uiState.update {
+                if (result.isSuccess) {
+                    it.copy(
+                        isLoading = false,
+                        successMessage = result.getOrNull(),
+                        errorMessage = null
                     )
-                    db.collection("wallets").document(userId).set(walletData)
+                } else {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = result.exceptionOrNull()?.message
+                    )
                 }
-
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    successMessage = "Registration successful!",
-                    errorMessage = null
-                )
-            } else {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = result.exceptionOrNull()?.message
-                )
             }
         }
     }
 
-
     fun clearMessages() {
-        _uiState.value = _uiState.value.copy(
-            errorMessage = null,
-            successMessage = null
-        )
+        _uiState.update { it.copy(errorMessage = null, successMessage = null) }
+    }
+
+    // FIXED: Reset form after successful registration
+    fun resetForm() {
+        _uiState.value = RegisterUiState()
     }
 }

@@ -29,7 +29,7 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 fun StaffOrdersScreen(
     userName: String,
     onNavigateToProducts: () -> Unit,
-    onNavigateToProfile: () -> Unit,
+    onNavigateToStaffProfile: () -> Unit,
     viewModel: StaffOrdersViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -146,10 +146,10 @@ fun StaffOrdersScreen(
                 .navigationBarsPadding(),
             onStaffOrdersClick = { },
             onProductsClick = onNavigateToProducts,
-            onProfileClick = onNavigateToProfile,
+            onStaffProfileClick = onNavigateToStaffProfile,
             isStaffOrdersSelected = true,
             isProductsSelected = false,
-            isProfileSelected = false
+            isStaffProfileSelected = false
         )
     }
 }
@@ -473,10 +473,10 @@ fun StaffBottomNavigation(
     modifier: Modifier = Modifier,
     onStaffOrdersClick: () -> Unit = {},
     onProductsClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {},
+    onStaffProfileClick: () -> Unit = {},
     isStaffOrdersSelected: Boolean = false,
     isProductsSelected: Boolean = false,
-    isProfileSelected: Boolean = false
+    isStaffProfileSelected: Boolean = false
 ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -507,8 +507,8 @@ fun StaffBottomNavigation(
             BottomNavItem(
                 iconRes = R.drawable.profile_icon,
                 label = "Me",
-                isSelected = isProfileSelected,
-                onClick = onProfileClick
+                isSelected = isStaffProfileSelected,
+                onClick = onStaffProfileClick
             )
         }
     }
