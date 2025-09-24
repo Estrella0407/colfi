@@ -1,6 +1,7 @@
 // MenuScreen.kt
 package com.example.colfi.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,12 +45,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.colfi.DrawableMapper
 import com.example.colfi.data.model.CartItem
 import com.example.colfi.data.model.MenuItem
 import com.example.colfi.data.repository.CartRepository
@@ -67,7 +70,7 @@ fun MenuScreen(
     cartViewModel: CartViewModel,
     onNavigateToHome: () -> Unit,
     onNavigateToOrders: () -> Unit,
-    onNavigateToProfile: () -> Unit,
+    onNavigateToCustomerProfile: () -> Unit,
     onNavigateToCart: () -> Unit,
     modifier: Modifier = Modifier,
     cartRespository: CartRepository
@@ -80,7 +83,6 @@ fun MenuScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            // keep these if you use accompanist / Material Insets; if they are unresolved remove them
             .statusBarsPadding()
             .navigationBarsPadding()
             .background(LightCream1)
@@ -88,12 +90,13 @@ fun MenuScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 56.dp)
         ) {
             MenuHeader()
 
             Row(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
             ) {
                 // Left side - Categories
                 Column(
@@ -125,7 +128,9 @@ fun MenuScreen(
 
                 // Right side - Menu items
                 Box(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
                 ) {
                     when {
                         uiState.isLoading -> {
@@ -181,6 +186,22 @@ fun MenuScreen(
             }
         }
 
+        // Bottom Navigation Bar
+        BottomNavigation(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            onMenuClick = { /* Already on menu */ },
+            onOrdersClick = onNavigateToOrders,
+            onHomeClick = onNavigateToHome,
+            onCustomerProfileClick = onNavigateToCustomerProfile,
+            isHomeSelected = false,
+            isMenuSelected = true,
+            isOrdersSelected = false,
+            isCustomerProfileSelected = false
+        )
+
         // Popup -> returns a CartItem via onProceedToCart
         if (showDialog && selectedMenuItemForPopup != null) {
             ItemSelectionPopUp(
@@ -197,22 +218,6 @@ fun MenuScreen(
                 }
             )
         }
-
-        // Bottom Navigation Bar
-        BottomNavigation(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .navigationBarsPadding(),
-            onMenuClick = { /* Already on menu */ },
-            onOrdersClick = onNavigateToOrders,
-            onHomeClick = onNavigateToHome,
-            onProfileClick = onNavigateToProfile,
-            isHomeSelected = false,
-            isMenuSelected = true,
-            isOrdersSelected = false,
-            isProfileSelected = false
-        )
     }
 }
 
@@ -340,15 +345,23 @@ fun MenuItemCard(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Image
-            AsyncImage(
-                model = if (menuItem.imageURL.isNotEmpty()) menuItem.imageURL else "https://via.placeholder.com/100x100?text=No+Image",
+            // Image from drawable resource
+            Image(
+                painter = painterResource(
+                    id = if (menuItem.imageName.isNotEmpty()) {
+                        menuItem.imageResId
+                    } else {
+                        // Fallback to category-based image or default
+                        DrawableMapper.getDrawableForImageName(menuItem.category)
+                    }
+                ),
                 contentDescription = menuItem.name,
                 modifier = Modifier
                     .size(100.dp)
                     .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
+
 
             // Content
             Column(
@@ -441,15 +454,22 @@ fun ItemSelectionPopUp(
         },
         text = {
             Column(horizontalAlignment = Alignment.Start) {
-                AsyncImage(
-                    model = if (menuItem.imageURL.isNotEmpty()) menuItem.imageURL else "https://via.placeholder.com/150x150?text=No+Image",
+                Image(
+                    painter = painterResource(
+                        id = if (menuItem.imageName.isNotEmpty()) {
+                            menuItem.imageResId
+                        } else {
+                            // Fallback to category-based image or default
+                            DrawableMapper.getDrawableForImageName(menuItem.category)
+                        }
+                    ),
                     contentDescription = menuItem.name,
                     modifier = Modifier
-                        .height(150.dp)
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp)),
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop
                 )
+
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(

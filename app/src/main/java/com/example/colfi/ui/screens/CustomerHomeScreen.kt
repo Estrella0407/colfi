@@ -1,6 +1,7 @@
 // CustomerHomeScreen.kt
 package com.example.colfi.ui.screens
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,7 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.R
-import com.example.colfi.data.model.User
+import com.example.colfi.data.model.Customer
+import com.example.colfi.data.model.Guest
 import com.example.colfi.ui.theme.DarkBrown1
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
@@ -26,21 +28,26 @@ import com.example.colfi.ui.viewmodel.HomeViewModel
 
 @Composable
 fun CustomerHomeScreen(
-    userName: String,
+    userName: String, // This parameter is now optional since we get user from Firebase
     onNavigateToMenu: () -> Unit,
     onNavigateToOrders: () -> Unit,
-    onNavigateToProfile: () -> Unit,
+    onNavigateToCustomerProfile: () -> Unit,
     onNavigateToDineIn: () -> Unit,
     onNavigateToPickUp: () -> Unit,
-    onNavigateToDelivery:()-> Unit,
+    onNavigateToDelivery: () -> Unit,
     onNavigateToWallet: (String) -> Unit,
+    onNavigateToLogin: () -> Unit = {}, // Add for error handling
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
-    LaunchedEffect(userName) {
-        viewModel.initialize(userName)
+    // Handle navigation to login when authentication fails
+    LaunchedEffect(uiState.shouldNavigateToLogin) {
+        if (uiState.shouldNavigateToLogin) {
+            onNavigateToLogin()
+            viewModel.onNavigateToLoginHandled()
+        }
     }
 
     Box(
@@ -49,61 +56,221 @@ fun CustomerHomeScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        if (uiState.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = Color(0xFFD2B48C)
-            )
-        } else {
-            val navBarHeight = WindowInsets.navigationBars
-                .asPaddingValues()
-                .calculateBottomPadding()
-
-            val bottomNavHeight = 64.dp
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-                    .padding(16.dp)
-                    .padding(bottom = navBarHeight + bottomNavHeight), // dynamic bottom space
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                ColfiHeader(randomQuote = uiState.randomQuote)
-                Spacer(modifier = Modifier.height(32.dp))
-                OrderOptions(
-                    onDineInClick = { onNavigateToDineIn() },
-                    onPickUpClick = { onNavigateToPickUp() },
-                    onDeliveryClick = { onNavigateToDelivery()  }
+        when {
+            uiState.isLoading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color(0xFFD2B48C)
                 )
-                Spacer(modifier = Modifier.height(24.dp))
-                uiState.user?.let { user ->
-                    UserInfoSection(user = user, onWalletClick = { onNavigateToWallet(userName) })
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-                CafeInfoSection()
-                Spacer(modifier = Modifier.height(24.dp))
             }
 
-            BottomNavigation(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .navigationBarsPadding(),
-                onHomeClick = { /* Already on Home */ },
-                onMenuClick = onNavigateToMenu,
-                onOrdersClick = onNavigateToOrders,
-                onProfileClick = onNavigateToProfile,
-                isHomeSelected = true,
-                isOrdersSelected = false,
-                isProfileSelected = false
-            )
+            uiState.errorMessage != null -> {
+                // Show error state with retry option
+                ErrorState(
+                    errorMessage = uiState.errorMessage!!,
+                    onRetry = { viewModel.refreshUserData() },
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
+            else -> {
+                // Normal content for both Customer and Guest users
+                HomeContent(
+                    uiState = uiState,
+                    scrollState = scrollState,
+                    userName = userName,
+                    onNavigateToMenu = onNavigateToMenu,
+                    onNavigateToOrders = onNavigateToOrders,
+                    onNavigateToCustomerProfile = onNavigateToCustomerProfile,
+                    onNavigateToDineIn = onNavigateToDineIn,
+                    onNavigateToPickUp = onNavigateToPickUp,
+                    onNavigateToDelivery = onNavigateToDelivery,
+                    onNavigateToWallet = onNavigateToWallet,
+                    onNavigateToLogin = onNavigateToLogin
+                )
+
+                // Bottom Navigation Bar
+                BottomNavigation(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .navigationBarsPadding(),
+                    onHomeClick = { /* Already on Home */ },
+                    onMenuClick = onNavigateToMenu,
+                    onOrdersClick = onNavigateToOrders,
+                    onCustomerProfileClick = onNavigateToCustomerProfile,
+                    isHomeSelected = true
+                )
+            }
         }
     }
 }
 
+@Composable
+private fun ErrorState(
+    errorMessage: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.barista),
+            contentDescription = "Error",
+            modifier = Modifier.size(64.dp),
+            tint = Color.Gray
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = errorMessage,
+            textAlign = TextAlign.Center,
+            color = Color.Gray,
+            fontFamily = colfiFont
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(containerColor = DarkBrown1)
+        ) {
+            Text("Retry", color = Color.White)
+        }
+    }
+}
 
+@Composable
+private fun HomeContent(
+    uiState: com.example.colfi.ui.state.HomeUiState,
+    scrollState: ScrollState,
+    userName: String,
+    onNavigateToMenu: () -> Unit,
+    onNavigateToOrders: () -> Unit,
+    onNavigateToCustomerProfile: () -> Unit,
+    onNavigateToDineIn: () -> Unit,
+    onNavigateToPickUp: () -> Unit,
+    onNavigateToDelivery: () -> Unit,
+    onNavigateToWallet: (String) -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
+    val navBarHeight = WindowInsets.navigationBars
+        .asPaddingValues()
+        .calculateBottomPadding()
+    val bottomNavHeight = 64.dp
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(16.dp)
+            .padding(bottom = navBarHeight + bottomNavHeight),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        ColfiHeader(randomQuote = uiState.randomQuote)
+        Spacer(modifier = Modifier.height(32.dp))
+
+        OrderOptions(
+            onDineInClick = onNavigateToDineIn,
+            onPickUpClick = onNavigateToPickUp,
+            onDeliveryClick = onNavigateToDelivery
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Show user info based on user type
+        when {
+            uiState.customer != null -> {
+                UserInfoSection(
+                    user = uiState.customer,
+                    onWalletClick = { onNavigateToWallet(userName) }
+                )
+            }
+            uiState.guest != null -> {
+                GuestInfoSection(
+                    guest = uiState.guest,
+                    onLogoutClick = onNavigateToLogin
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        CafeInfoSection()
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+fun GuestInfoSection(
+    guest: Guest,
+    onLogoutClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Welcome, ${guest.displayName}! 👋",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            Text(
+                text = "COLFi",
+                fontFamily = colfiFont,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        // Guest info card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE4D1))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Browsing as Guest",
+                    fontFamily = colfiFont,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Sign up to earn points and access your wallet!",
+                    fontFamily = colfiFont,
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Logout button for guest users
+                Button(
+                    onClick = onLogoutClick,
+                    colors = ButtonDefaults.buttonColors(containerColor = DarkBrown1),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Sign In / Sign Up",
+                        color = Color.White,
+                        fontFamily = colfiFont,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Keep all your existing composables exactly as they are
 @Composable
 fun ColfiHeader(randomQuote: String, modifier: Modifier = Modifier) {
     val colfiFontFamily = colfiFont
@@ -212,7 +379,7 @@ fun OrderOptionCard(
 }
 
 @Composable
-fun UserInfoSection(user: User,
+fun UserInfoSection(user: Customer,
                     modifier: Modifier = Modifier,
                     onWalletClick: () -> Unit) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -355,10 +522,10 @@ fun BottomNavigation(
     onMenuClick: () -> Unit = {},
     onOrdersClick: () -> Unit = {},
     onHomeClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {},
+    onCustomerProfileClick: () -> Unit = {},
     isHomeSelected: Boolean = false,
     isOrdersSelected: Boolean = false,
-    isProfileSelected: Boolean = false,
+    isCustomerProfileSelected: Boolean = false,
     isMenuSelected: Boolean = false
 ) {
     Card(
@@ -396,8 +563,8 @@ fun BottomNavigation(
             BottomNavItem(
                 iconRes = R.drawable.profile_icon,
                 label = "Me",
-                isSelected = isProfileSelected,
-                onClick = onProfileClick
+                isSelected = isCustomerProfileSelected,
+                onClick = onCustomerProfileClick
             )
         }
     }
@@ -429,4 +596,3 @@ fun BottomNavItem(
         )
     }
 }
-

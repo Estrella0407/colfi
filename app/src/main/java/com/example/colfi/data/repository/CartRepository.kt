@@ -86,8 +86,12 @@ class CartRepository(private val cartDao: CartDao) {
             .catch { emit(0.0) }
     }
 
-    // Helper method to get cart item with ID for removal
-    suspend fun getCartItemWithId(menuItemId: String, temperature: String?, sugarLevel: String?): CartItemEntity? {
+    // Fixed method - now returns CartItemEntity instead of just the ID
+    suspend fun getCartItemWithId(
+        menuItemId: String,
+        temperature: String?,
+        sugarLevel: String?
+    ): CartItemEntity? {
         return try {
             cartDao.findSimilarItem(menuItemId, temperature, sugarLevel)
         } catch (e: Exception) {

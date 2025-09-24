@@ -29,7 +29,7 @@ fun OrdersScreen(
     userName: String,
     onNavigateToMenu: () -> Unit,
     onNavigateToHome: () -> Unit,
-    onNavigateToProfile: () -> Unit,
+    onNavigateToCustomerProfile: () -> Unit,
     viewModel: OrdersViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -45,12 +45,13 @@ fun OrdersScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 56.dp) // Adjust for bottom navigation height
         ) {
             OrderHeader(selectedTab = selectedTab, onTabSelected = { viewModel.selectTab(it) })
 
             Box(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
             ) {
                 when {
                     uiState.isLoading -> {
@@ -100,17 +101,16 @@ fun OrdersScreen(
         // Bottom Navigation Bar
         BottomNavigation(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .navigationBarsPadding(),
+                .padding(top = 8.dp),
             onHomeClick = onNavigateToHome,
             onMenuClick = onNavigateToMenu,
             onOrdersClick = { },
-            onProfileClick = onNavigateToProfile,
+            onCustomerProfileClick = onNavigateToCustomerProfile,
             isHomeSelected = false,
             isMenuSelected = false,
             isOrdersSelected = true,
-            isProfileSelected = false
+            isCustomerProfileSelected = false
         )
     }
 }

@@ -31,7 +31,7 @@ fun CartItem.toEntity(): CartItemEntity {
         menuItemDescription = menuItem.description,
         menuItemPrice = menuItem.price,
         menuItemCategory = menuItem.category,
-        menuItemImageURL = menuItem.imageURL,
+        menuItemImageName = menuItem.imageName,
         selectedTemperature = selectedTemperature,
         selectedSugarLevel = selectedSugarLevel,
         quantity = quantity
@@ -46,7 +46,7 @@ fun CartItemEntity.toCartItem(): CartItem {
             description = menuItemDescription,
             price = menuItemPrice,
             category = menuItemCategory,
-            imageURL = menuItemImageURL,
+            imageName = menuItemImageName,
             availability = true
         ),
         selectedTemperature = selectedTemperature,

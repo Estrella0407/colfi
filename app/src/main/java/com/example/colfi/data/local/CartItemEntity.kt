@@ -13,7 +13,7 @@ data class CartItemEntity(
     val menuItemDescription: String,
     val menuItemPrice: Double,
     val menuItemCategory: String,
-    val menuItemImageURL: String,
+    val menuItemImageName: String,
     val selectedTemperature: String? = null, // "Hot", "Cold", or null
     val selectedSugarLevel: String? = null,  // "No Sugar", "Less Sugar", "Normal Sugar", "Extra Sugar", or null
     val quantity: Int = 1,

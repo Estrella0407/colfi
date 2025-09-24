@@ -33,12 +33,10 @@ import com.example.colfi.ui.viewmodel.LoadingViewModel
 @Composable
 fun LoadingScreen(
     onNavigateToLogin: () -> Unit,
-    onNavigateToHome: (String) -> Unit = { },
+    onNavigateToHome: (String, String) -> Unit,
     viewModel: LoadingViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
-    val infiniteTransition = rememberInfiniteTransition(label = "loading_transition")
 
     LaunchedEffect(Unit) {
         // Use the new startLoading function that handles authentication check

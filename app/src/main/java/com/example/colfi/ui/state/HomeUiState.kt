@@ -1,11 +1,15 @@
 // HomeUiState.kt
 package com.example.colfi.ui.state
 
-import com.example.colfi.data.model.User
+import com.example.colfi.data.model.Customer
+import com.example.colfi.data.model.Guest
 
 data class HomeUiState(
-    val user: User? = null,
-    val isLoading: Boolean = false,
-    val errorMessage: String = "",
-    val randomQuote: String = ""
+    val customer: Customer? = null,
+    val guest: Guest? = null,
+    val isGuest: Boolean = false,
+    val isLoading: Boolean = true,
+    val errorMessage: String? = null,
+    val randomQuote: String = " ",
+    val shouldNavigateToLogin: Boolean = false
 )

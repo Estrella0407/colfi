@@ -15,18 +15,18 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
-import com.example.colfi.ui.viewmodel.ProfileViewModel
+import com.example.colfi.ui.viewmodel.CustomerProfileViewModel
 
 @Composable
-fun ProfileScreen(
+fun CustomerProfileScreen(
     userName: String,
     onNavigateToMenu: () -> Unit,
     onNavigateToHome: () -> Unit,
     onNavigateToLogin: () -> Unit,
     onNavigateToOrders: () -> Unit,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: CustomerProfileViewModel = viewModel()
 ) {
-    val user by viewModel.user.collectAsState()
+    val user by viewModel.customer.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
@@ -73,7 +73,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     Button(
-                        onClick = { viewModel.logout(onNavigateToLogin) },
+                        onClick = { viewModel.logout() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Logout", fontFamily = colfiFont)
@@ -83,6 +83,9 @@ fun ProfileScreen(
                     Text("No user data available")
                 }
             }
+            
+            Spacer(modifier = Modifier.weight(1f))
+
         }
 
         // Bottom Navigation Bar
@@ -90,15 +93,15 @@ fun ProfileScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .navigationBarsPadding(),
+                .padding(top = 8.dp),
             onHomeClick = onNavigateToHome,
             onMenuClick = onNavigateToMenu,
             onOrdersClick = onNavigateToOrders,
-            onProfileClick = { },
+            onCustomerProfileClick = { },
             isHomeSelected = false,
             isMenuSelected = false,
             isOrdersSelected = false,
-            isProfileSelected = true
+            isCustomerProfileSelected = true
         )
     }
 }

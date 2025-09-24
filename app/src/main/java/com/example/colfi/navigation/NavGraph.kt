@@ -30,10 +30,15 @@ fun NavGraph(navController: NavHostController) {
                         popUpTo(Screen.Loading.route) { inclusive = true }
                     }
                 },
-                onNavigateToHome = { userName ->
-                    navController.navigate(Screen.CustomerHome.createRoute(userName)) {
-                        launchSingleTop = true
-                        restoreState = true
+                onNavigateToHome = { userName, userRole ->
+                    val destination = when (userRole) {
+                        "customer", "guest" -> Screen.CustomerHome.createRoute(userName)
+                        "staff" -> Screen.StaffOrders.createRoute(userName)
+                        else -> Screen.CustomerHome.createRoute(userName)
+                    }
+                    
+                    navController.navigate(destination) {
+                        popUpTo(Screen.Loading.route) { inclusive = true }
                     }
                 },
                 viewModel = viewModel
@@ -58,7 +63,9 @@ fun NavGraph(navController: NavHostController) {
                     }
                 },
                 onNavigateAsGuest = {
-                    navController.navigate(Screen.CustomerHome.route)
+                    navController.navigate(Screen.CustomerHome.createRoute("Guest")) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
                 },
                 onNavigateToRegister = {
                     navController.navigate(Screen.RoleSelection.createRoute(isForRegistration = true))
@@ -115,8 +122,8 @@ fun NavGraph(navController: NavHostController) {
                         restoreState = true
                     }
                 },
-                onNavigateToProfile = {
-                    navController.navigate(Screen.Profile.createRoute(userName)) {
+                onNavigateToCustomerProfile = {
+                    navController.navigate(Screen.CustomerProfile.createRoute(userName)) {
                         launchSingleTop = true
                         restoreState = true
                     }
@@ -132,6 +139,11 @@ fun NavGraph(navController: NavHostController) {
                 },
                 onNavigateToWallet = {
                     navController.navigate(Screen.Wallet.createRoute(userName))
+                },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.CustomerHome.route) { inclusive = true }
+                    }
                 },
                 viewModel = viewModel
             )
@@ -169,8 +181,8 @@ fun NavGraph(navController: NavHostController) {
                         restoreState = true
                     }
                 },
-                onNavigateToProfile = {
-                    navController.navigate(Screen.Profile.createRoute(userName)) {
+                onNavigateToCustomerProfile = {
+                    navController.navigate(Screen.CustomerProfile.createRoute(userName)) {
                         launchSingleTop = true
                         restoreState = true
                     }
@@ -205,8 +217,8 @@ fun NavGraph(navController: NavHostController) {
                         restoreState = true
                     }
                 },
-                onNavigateToProfile = {
-                    navController.navigate(Screen.Profile.createRoute(userName)) {
+                onNavigateToCustomerProfile = {
+                    navController.navigate(Screen.CustomerProfile.createRoute(userName)) {
                         launchSingleTop = true
                         restoreState = true
                     }
@@ -216,12 +228,12 @@ fun NavGraph(navController: NavHostController) {
         }
 
         composable(
-            route = Screen.Profile.route,
+            route = Screen.CustomerProfile.route,
             arguments = listOf(navArgument("user_name") { type = NavType.StringType })
         ) { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
-            val viewModel: ProfileViewModel = viewModel()
-            ProfileScreen(
+            val viewModel: CustomerProfileViewModel = viewModel()
+            CustomerProfileScreen(
                 userName = userName,
                 onNavigateToHome = {
                     navController.navigate(Screen.CustomerHome.createRoute(userName)) {
@@ -329,18 +341,74 @@ fun NavGraph(navController: NavHostController) {
             route = Screen.StaffOrders.route,
             arguments = listOf(navArgument("user_name") { type = NavType.StringType })
             ) { backStackEntry ->
-            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "UnknownStaff"
             val viewModel: StaffOrdersViewModel = viewModel()
             StaffOrdersScreen(
                 userName = userName,
                 viewModel = viewModel,
-                onNavigateToProducts = { },
-                onNavigateToProfile = {
-                    navController.navigate(Screen.Profile.createRoute(userName)) {
+                onNavigateToProducts = {
+                    navController.navigate(Screen.Products.route) {
                         launchSingleTop = true
                         restoreState = true
                     }
                 },
+                onNavigateToStaffProfile = {
+                    navController.navigate(Screen.StaffProfile.createRoute(userName)) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+            )
+        }
+
+        composable(
+            route = Screen.Products.route
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
+            val viewModel: ProductsViewModel = viewModel()
+            ProductsScreen(
+                viewModel = viewModel,
+                onNavigateToStaffOrders = {
+                    navController.navigate(Screen.StaffOrders.route) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigateToStaffProfile = {
+                    navController.navigate(Screen.StaffProfile.createRoute(userName)) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Screen.StaffProfile.route,
+            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+            ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
+            val viewModel: StaffProfileViewModel = viewModel()
+            StaffProfileScreen(
+                userName = userName,
+                viewModel = viewModel,
+                onNavigateToStaffOrders = {
+                    navController.navigate(Screen.StaffOrders.createRoute(userName)) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigateToProducts = {
+                    navController.navigate(Screen.Products.route) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.StaffOrders.route) { inclusive = true }
+                    }
+                }
             )
         }
     }

@@ -1,11 +1,12 @@
+// LoginViewModel.kt
 package com.example.colfi.ui.viewmodel
 
+import android.app.Application
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.colfi.data.repository.AuthRepository
 import com.example.colfi.ui.state.LoginUiState
-import com.google.firebase.firestore.auth.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,8 +14,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class LoginViewModel(
-    private val authRepository: AuthRepository = AuthRepository()
-) : ViewModel() {
+    application: Application
+) : AndroidViewModel(application) {
+    private val authRepository: AuthRepository = AuthRepository(application.applicationContext)
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -31,35 +33,33 @@ class LoginViewModel(
         _uiState.update { it.copy(passwordVisible = !it.passwordVisible) }
     }
 
-    /**
-     * Attempts to log in using the provided username and password via Firebase.
-     * The result of the login attempt (success or failure) is reflected in the uiState.
-     */
     fun login() {
         val currentState = _uiState.value
+        Log.d("LoginViewModel", "Login attempt - Username: '${currentState.username}', Password length: ${currentState.password.length}")
+
         if (currentState.username.isBlank() || currentState.password.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Please fill in all fields") }
             return
         }
 
-        // Set loading state and clear previous errors/success flags
         _uiState.update { it.copy(isLoading = true, errorMessage = "", isLoginSuccessful = false) }
 
         viewModelScope.launch {
+            Log.d("LoginViewModel", "Starting authentication...")
             val result = authRepository.login(currentState.username, currentState.password)
 
             result.onSuccess { user ->
-                // On success, update the state with the user's name and success flag
+                Log.d("LoginViewModel", "Login successful - User: ${user.displayName}, Role: ${user.role}")
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         isLoginSuccessful = true,
-                        loggedInUserName = user.displayName, // Store the user's name on success
-                        loggedInUserRole = user.role // Store the user's role on success
+                        loggedInUserName = user.displayName,
+                        loggedInUserRole = user.role
                     )
                 }
             }.onFailure { exception ->
-                // On failure, update the state with the error message
+                Log.e("LoginViewModel", "Login failed: ${exception.message}")
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -70,11 +70,8 @@ class LoginViewModel(
         }
     }
 
-    /**
-     * Resets the login success flag. This should be called by the UI after it has
-     * handled the navigation, to prevent re-triggering navigation on configuration changes.
-     */
     fun onLoginHandled() {
+        Log.d("LoginViewModel", "Login handled - clearing success state")
         _uiState.update { it.copy(
             isLoginSuccessful = false,
             loggedInUserName = null,
@@ -82,32 +79,29 @@ class LoginViewModel(
         ) }
     }
 
-    // --- NEW FUNCTION FOR TRUE ANONYMOUS LOGIN ---
     fun loginAsGuest() {
-        // 1. Set loading state and clear previous errors
+        Log.d("LoginViewModel", "Guest login attempt")
         _uiState.update { it.copy(
             isLoading = true,
             errorMessage = "",
-            isLoginSuccessful = false,
-            loggedInUserRole = "guest"
+            isLoginSuccessful = false
         ) }
 
         viewModelScope.launch {
-            // 2. The ViewModel CALLS the new repository function
             val result = authRepository.loginAsGuest()
 
-            // 3. Handle the result from the repository
             result.onSuccess { guestUser ->
-                // On success, update the UI state to trigger navigation
+                Log.d("LoginViewModel", "Guest login successful - User: ${guestUser.displayName}")
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         isLoginSuccessful = true,
-                        loggedInUserName = guestUser.displayName // Will be "Guest"
+                        loggedInUserName = guestUser.displayName,
+                        loggedInUserRole = guestUser.role
                     )
                 }
             }.onFailure { exception ->
-                // On failure, update the UI state with an error message
+                Log.e("LoginViewModel", "Guest login failed: ${exception.message}")
                 _uiState.update {
                     it.copy(
                         isLoading = false,

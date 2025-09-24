@@ -1,6 +1,7 @@
 // LoginScreen.kt
 package com.example.colfi.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -32,11 +33,20 @@ fun LoginScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // LaunchedEffect for navigation ---
-    // This block observes the login state and navigates automatically on success.
-    LaunchedEffect(uiState.isLoginSuccessful, uiState.loggedInUserName, uiState.loggedInUserRole) {
-        if (uiState.isLoginSuccessful && uiState.loggedInUserName != null && uiState.loggedInUserRole != null) {
-            onNavigateToHome(uiState.loggedInUserName!!, uiState.loggedInUserRole!!)
+    // LaunchedEffect for navigation
+    LaunchedEffect(uiState.isLoginSuccessful) {
+        if (uiState.isLoginSuccessful) {
+            val userName = uiState.loggedInUserName ?: "Guest"
+            val userRole = uiState.loggedInUserRole ?: "guest"
+
+            Log.d("LoginScreen", "Navigating - User: $userName, Role: $userRole")
+
+            if (userRole == "guest") {
+                onNavigateAsGuest() // Navigate to CustomerHome
+            } else {
+                onNavigateToHome(userName, userRole)
+            }
+
             viewModel.onLoginHandled()
         }
     }
