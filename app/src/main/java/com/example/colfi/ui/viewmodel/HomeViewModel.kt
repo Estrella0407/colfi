@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.colfi.data.model.Customer
 import com.example.colfi.data.model.Guest
+import com.example.colfi.data.model.User
 import com.example.colfi.data.repository.AuthRepository
 import com.example.colfi.ui.state.HomeUiState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,6 +52,7 @@ class HomeViewModel(
                             _uiState.value = _uiState.value.copy(
                                 customer = user,
                                 guest = null,
+                                user = user as User,
                                 isGuest = false,
                                 isLoading = false,
                                 errorMessage = null,
@@ -61,6 +63,7 @@ class HomeViewModel(
                             _uiState.value = _uiState.value.copy(
                                 customer = null,
                                 guest = user,
+                                user = user as User,
                                 isGuest = true,
                                 isLoading = false,
                                 errorMessage = null,
@@ -73,6 +76,7 @@ class HomeViewModel(
                             _uiState.value = _uiState.value.copy(
                                 customer = null,
                                 guest = null,
+                                user = null,
                                 isGuest = false,
                                 isLoading = false,
                                 errorMessage = null,
@@ -90,16 +94,19 @@ class HomeViewModel(
                         _uiState.value = _uiState.value.copy(
                             customer = null,
                             guest = null,
+                            user = null,
                             isGuest = false,
                             isLoading = false,
                             errorMessage = null,
                             shouldNavigateToLogin = true
+
                         )
                     } else {
                         // For other errors, show error with retry
                         _uiState.value = _uiState.value.copy(
                             customer = null,
                             guest = null,
+                            user = null,
                             isGuest = false,
                             isLoading = false,
                             errorMessage = exception.message ?: "Failed to load user data",
@@ -128,6 +135,7 @@ class HomeViewModel(
                     _uiState.value = _uiState.value.copy(
                         customer = null,
                         guest = guest,
+                        user = guest as User,
                         isGuest = true,
                         isLoading = false,
                         errorMessage = null,

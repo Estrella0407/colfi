@@ -22,83 +22,118 @@ class WalletViewModel : ViewModel() {
 
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    private val walletsCollection = firestore.collection("wallets")
+    private val usersCollection = firestore.collection("users")
 
-    fun initialize(userId: String) {
-        Log.d("WalletViewModelDebug", "initialize called for: $userId. Current isLoading: ${_uiState.value.isLoading}")
+    fun initialize() {
+        Log.d("WalletViewModelDebug", "initialize called. Current user: ${auth.currentUser?.uid}")
+
         _uiState.update {
             it.copy(isLoading = true, message = null)
         }
 
-        if (userId.isBlank() || userId == "Guest" || userId.startsWith("guest_anonymous_") || userId == "GUEST_USER_UID_PLACEHOLDER") {
-            Log.w("WalletViewModel", "Initialization skipped for blank or Guest user: $userId")
-            val guestMessage = if (userId.isBlank()) "User identifier missing." else "Guest wallet not available"
-
+        val firebaseUser = auth.currentUser
+        if (firebaseUser == null) {
+            Log.w("WalletViewModel", "No Firebase user authenticated")
             _uiState.update {
-                it.copy(balance = 0.0, message = guestMessage, isLoading = false)
+                it.copy(
+                    balance = 0.0,
+                    message = "Please log in to access wallet features",
+                    isLoading = false
+                )
             }
             return
         }
 
-        val walletDoc = walletsCollection.document(userId)
-        walletDoc.get()
+        val userId = firebaseUser.uid
+        if (userId.isBlank()) {
+            Log.w("WalletViewModel", "User ID is blank")
+            _uiState.update {
+                it.copy(
+                    balance = 0.0,
+                    message = "User identifier missing",
+                    isLoading = false
+                )
+            }
+            return
+        }
+
+        val userDoc = usersCollection.document(userId)
+        userDoc.get()
             .addOnSuccessListener { doc ->
                 if (doc != null && doc.exists()) {
-                    val balance = doc.getDouble("balance") ?: 0.0
-                    Log.d("WalletViewModel", "Read initial balance for '$userId'. Balance: $balance")
+                    val balance = doc.getDouble("walletBalance") ?: 0.0
+                    Log.d("WalletViewModel", "Wallet loaded for user '$userId'. Balance: $balance")
                     _uiState.update {
                         it.copy(balance = balance, isLoading = false)
                     }
                 } else {
-                    Log.w("WalletViewModel", "Wallet document for '$userId' does not exist. Setting balance to 0.")
-                    _uiState.update {
-                        it.copy(balance = 0.0, isLoading = false, message = "Wallet not found for '$userId'.")
-                    }
+                    Log.w("WalletViewModel", "User document for '$userId' does not exist. Creating default wallet.")
+                    // Create a default wallet document if it doesn't exist
+                    userDoc.set(mapOf("walletBalance" to 0.0))
+                        .addOnSuccessListener {
+                            _uiState.update {
+                                it.copy(balance = 0.0, isLoading = false)
+                            }
+                        }
+                        .addOnFailureListener { e ->
+                            _uiState.update {
+                                it.copy(balance = 0.0, isLoading = false, message = "Error creating wallet")
+                            }
+                        }
                 }
             }
             .addOnFailureListener { exception ->
-                _uiState.update { it.copy(balance = 0.0, isLoading = false, message = "Error loading wallet.") }
+                Log.e("WalletViewModel", "Error loading wallet: ${exception.message}")
+                _uiState.update {
+                    it.copy(
+                        balance = 0.0,
+                        isLoading = false,
+                        message = "Error loading wallet: ${exception.message}"
+                    )
+                }
             }
-    }
-
-    fun selectMethod(method: String) {
-        _uiState.update {
-            it.copy(selectedMethod = method)
-        }
     }
 
     fun topUp(amount: Double) {
         _uiState.update { it.copy(isLoading = true, message = null) }
 
-        val firebaseCurrentUser = auth.currentUser
-        if (firebaseCurrentUser == null) {
-            _uiState.update { it.copy(isLoading = false, message = "Top-up failed: You must be logged in.") }
+        val firebaseUser = auth.currentUser
+        if (firebaseUser == null) {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    message = "Top-up failed: Please log in first"
+                )
+            }
             return
         }
 
-        val uid = firebaseCurrentUser.uid
+        val uid = firebaseUser.uid
         if (amount <= 0) {
-            _uiState.update { it.copy(isLoading = false, message = "Top-up amount must be positive.") }
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    message = "Top-up amount must be positive"
+                )
+            }
             return
         }
 
-        val walletDocRef = walletsCollection.document(uid)
+        val userDocRef = usersCollection.document(uid)
 
         viewModelScope.launch {
             try {
-                val snapshot = walletDocRef.get().await()
+                val snapshot = userDocRef.get().await()
                 val currentBalance = if (snapshot.exists()) {
-                    snapshot.getDouble("balance") ?: 0.0
+                    snapshot.getDouble("walletBalance") ?: 0.0
                 } else {
-                    Log.w("WalletViewModel", "Wallet document not found for $uid. Cannot top-up.")
-                    _uiState.update {
-                        it.copy(isLoading = false, message = "Wallet not set up. Please contact support.")
-                    }
-                    return@launch
+                    // Create wallet if it doesn't exist
+                    userDocRef.set(mapOf("walletBalance" to 0.0)).await()
+                    0.0
                 }
 
                 val newBalance = currentBalance + amount
-                walletDocRef.update("balance", newBalance).await()
+                userDocRef.update("walletBalance", newBalance).await()
 
                 _uiState.update {
                     it.copy(
@@ -108,11 +143,21 @@ class WalletViewModel : ViewModel() {
                     )
                 }
 
-            } catch (e: FirebaseFirestoreException) {
-                _uiState.update { it.copy(isLoading = false, message = "Top-up failed! Firestore Error: ${e.code} - ${e.message}") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, message = "An unexpected error occurred during top-up.") }
+                Log.e("WalletViewModel", "Top-up error: ${e.message}")
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        message = "Top-up failed: ${e.message}"
+                    )
+                }
             }
+        }
+    }
+
+    fun selectMethod(method: String) {
+        _uiState.update {
+            it.copy(selectedMethod = method)
         }
     }
 

@@ -370,7 +370,12 @@ fun NavGraph(navController: NavHostController) {
 
         composable(
             route = Screen.Wallet.route,
-            arguments = listOf(navArgument("user_name") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("user_name") {
+                    type = NavType.StringType
+                    defaultValue = "Guest"
+                },
+            )
         ) { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("user_name") ?: "Guest"
             val viewModel: WalletViewModel = viewModel()

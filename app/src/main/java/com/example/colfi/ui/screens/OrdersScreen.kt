@@ -45,13 +45,12 @@ fun OrdersScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(bottom = 56.dp) // Adjust for bottom navigation height
         ) {
             OrderHeader(selectedTab = selectedTab, onTabSelected = { viewModel.selectTab(it) })
 
             Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
+                modifier = Modifier.fillMaxSize()
             ) {
                 when {
                     uiState.isLoading -> {
@@ -98,11 +97,12 @@ fun OrdersScreen(
             }
         }
 
-        // Bottom Navigation Bar
+        // Bottom Navigation Bar - Fixed at bottom
         BottomNavigation(
             modifier = Modifier
+                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(top = 8.dp),
+                .navigationBarsPadding(),
             onHomeClick = onNavigateToHome,
             onMenuClick = onNavigateToMenu,
             onOrdersClick = { },

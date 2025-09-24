@@ -1,6 +1,8 @@
 // CustomerHomeScreen.kt
 package com.example.colfi.ui.screens
 
+import android.util.Log
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,11 +20,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.R
+import com.example.colfi.data.model.Customer
+import com.example.colfi.data.model.Guest
 import com.example.colfi.data.model.User
+import com.example.colfi.ui.state.WalletUiState
 import com.example.colfi.ui.theme.DarkBrown1
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.HomeViewModel
+import com.example.colfi.ui.viewmodel.WalletViewModel
 
 @Composable
 fun CustomerHomeScreen(
@@ -34,9 +40,10 @@ fun CustomerHomeScreen(
     onNavigateToPickUp: () -> Unit,
     onNavigateToDelivery: () -> Unit,
     onNavigateToWallet: (String) -> Unit,
-    onNavigateToLogin: () -> Unit = {}, // Add for error handling
+    onNavigateToLogin: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
+
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
@@ -46,25 +53,7 @@ fun CustomerHomeScreen(
             onNavigateToLogin()
             viewModel.onNavigateToLoginHandled()
         }
-    // Wallet ViewModel
-    val walletViewModel: WalletViewModel = viewModel()
-    val walletUiState by walletViewModel.uiState.collectAsState()
-
-    // Initialize wallet data
-    LaunchedEffect(userName) {
-        Log.d("CustomerHomeScreen", "LaunchedEffect triggered for userName: $userName")
-        viewModel.initialize(userName)        // <<< --- ADD THIS LINE ---
-        walletViewModel.initialize(userName)  // This one was already correct
     }
-
-    // Log the user state from HomeViewModel after attempting initialization
-    LaunchedEffect(uiState.user) {
-        Log.d("CustomerHomeScreen", "HomeViewModel uiState.user updated to: ${uiState.user}")
-    }
-    LaunchedEffect(uiState.isLoading) {
-        Log.d("CustomerHomeScreen", "HomeViewModel uiState.isLoading updated to: ${uiState.isLoading}")
-    }
-
 
     Box(
         modifier = Modifier
@@ -93,6 +82,7 @@ fun CustomerHomeScreen(
                 // Normal content for both Customer and Guest users
                 HomeContent(
                     uiState = uiState,
+                    homeViewModel = viewModel,
                     scrollState = scrollState,
                     userName = userName,
                     onNavigateToMenu = onNavigateToMenu,
@@ -102,7 +92,7 @@ fun CustomerHomeScreen(
                     onNavigateToPickUp = onNavigateToPickUp,
                     onNavigateToDelivery = onNavigateToDelivery,
                     onNavigateToWallet = onNavigateToWallet,
-                    onNavigateToLogin = onNavigateToLogin
+                    onNavigateToLogin = onNavigateToLogin,
                 )
 
                 // Bottom Navigation Bar
@@ -158,6 +148,7 @@ private fun ErrorState(
 @Composable
 private fun HomeContent(
     uiState: com.example.colfi.ui.state.HomeUiState,
+    homeViewModel: HomeViewModel,
     scrollState: ScrollState,
     userName: String,
     onNavigateToMenu: () -> Unit,
@@ -167,7 +158,7 @@ private fun HomeContent(
     onNavigateToPickUp: () -> Unit,
     onNavigateToDelivery: () -> Unit,
     onNavigateToWallet: (String) -> Unit,
-    onNavigateToLogin: () -> Unit
+    onNavigateToLogin: () -> Unit,
 ) {
     val navBarHeight = WindowInsets.navigationBars
         .asPaddingValues()
@@ -194,15 +185,16 @@ private fun HomeContent(
 
         // Show user info based on user type
         when {
-            uiState.customer != null -> {
+            uiState.user != null && uiState.user is Customer -> {
                 UserInfoSection(
-                    user = uiState.customer,
+                    user = uiState.user as Customer,
+                    walletBalance = homeViewModel.getWalletBalance(),
                     onWalletClick = { onNavigateToWallet(userName) }
                 )
             }
             uiState.guest != null -> {
                 GuestInfoSection(
-                    guest = uiState.guest,
+                    guest = uiState.guest!!,
                     onLogoutClick = onNavigateToLogin
                 )
             }
@@ -395,8 +387,8 @@ fun OrderOptionCard(
 
 @Composable
 fun UserInfoSection(
-    user: User,
-    walletUiState: WalletUiState,
+    user: Customer,
+    walletBalance: Double,
     modifier: Modifier = Modifier,
     onWalletClick: () -> Unit
 ) {
@@ -428,7 +420,7 @@ fun UserInfoSection(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             InfoCard(
-                title = String.format("%.2f", walletUiState.balance),
+                title = "RM %.2f".format(walletBalance),
                 subtitle = "Wallet (RM)",
                 modifier = Modifier
                     .weight(1f)

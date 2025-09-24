@@ -12,8 +12,8 @@ interface CartDao {
     @Query("SELECT * FROM cart_items WHERE id = :id")
     suspend fun getCartItemById(id: Long): CartItemEntity?
 
-    @Query("SELECT * FROM cart_items WHERE menuItemId = :menuItemId LIMIT 1")
-    suspend fun findSimilarItem(menuItemId: String): CartItemEntity?
+    @Query("SELECT * FROM cart_items WHERE menuItemId = :menuItemId AND selectedTemperature = :selectedTemperature AND selectedSugarLevel = :selectedSugarLevel LIMIT 1")
+    suspend fun findSimilarItem(menuItemId: String, selectedTemperature: String?, selectedSugarLevel: String?): CartItemEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCartItem(cartItem: CartItemEntity): Long
@@ -35,4 +35,7 @@ interface CartDao {
 
     @Query("UPDATE cart_items SET quantity = :quantity WHERE id = :id")
     suspend fun updateQuantity(id: Long, quantity: Int)
+    
+    @Query("SELECT * FROM cart_items WHERE menuItemId = :menuItemId LIMIT 1")
+    suspend fun getCartItemWithId(menuItemId: String): CartItemEntity?
 }

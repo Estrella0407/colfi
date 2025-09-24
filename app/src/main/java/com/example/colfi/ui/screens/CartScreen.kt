@@ -261,12 +261,29 @@ fun CartItemCard(
                         fontWeight = FontWeight.SemiBold
                     )
 
-                    Text(
-                        text = "RM ${String.format("%.2f", cartItem.menuItem.price)} each",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+
+                    // Display temperature and sugar leve with better formatting
+                    Column(modifier = Modifier.padding(top = 4.dp)) {
+                        cartItem.selectedTemperature?.let { temperature ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = temperature,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        cartItem.selectedSugarLevel?.let { sugarLevel ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = sugarLevel,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
                 }
 
                 IconButton(onClick = onRemove) {

@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.CustomerProfileViewModel
+import com.example.colfi.ui.viewmodel.WalletViewModel
 
 @Composable
 fun CustomerProfileScreen(
@@ -24,11 +25,13 @@ fun CustomerProfileScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToLogin: () -> Unit,
     onNavigateToOrders: () -> Unit,
-    viewModel: CustomerProfileViewModel = viewModel()
+    viewModel: CustomerProfileViewModel = viewModel(),
+    walletViewModel: WalletViewModel = viewModel()
 ) {
     val user by viewModel.customer.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val walletUiState by walletViewModel.uiState.collectAsState()
 
     Box(
         modifier = Modifier
@@ -40,7 +43,9 @@ fun CustomerProfileScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 56.dp) // Adjust for bottom navigation height
         ) {
             Text(
                 text = "Profile",
@@ -88,12 +93,12 @@ fun CustomerProfileScreen(
 
         }
 
-        // Bottom Navigation Bar
+        // Bottom Navigation Bar - Fixed at bottom
         BottomNavigation(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(top = 8.dp),
+                .navigationBarsPadding(),
             onHomeClick = onNavigateToHome,
             onMenuClick = onNavigateToMenu,
             onOrdersClick = onNavigateToOrders,
