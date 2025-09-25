@@ -3,6 +3,7 @@ package com.example.colfi.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.colfi.data.repository.AuthRepository
 import com.example.colfi.data.repository.OrdersRepository
 import com.example.colfi.ui.state.OrdersUiState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class OrdersViewModel(
+    private val authRepository: AuthRepository = AuthRepository(),
     private val ordersRepository: OrdersRepository = OrdersRepository()
 ) : ViewModel() {
 
@@ -37,9 +39,11 @@ class OrdersViewModel(
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = "")
 
         viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId()
+
             when (_selectedTab.value) {
                 "current" -> {
-                    ordersRepository.getCurrentOrders()
+                    ordersRepository.getCurrentOrders(userId)
                         .onSuccess { orders ->
                             _uiState.value = _uiState.value.copy(
                                 orders = orders,
@@ -55,7 +59,7 @@ class OrdersViewModel(
                         }
                 }
                 "history" -> {
-                    ordersRepository.getOrderHistory()
+                    ordersRepository.getOrderHistory(userId)
                         .onSuccess { orders ->
                             _uiState.value = _uiState.value.copy(
                                 orders = orders,

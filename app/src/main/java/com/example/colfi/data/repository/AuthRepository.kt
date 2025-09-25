@@ -400,6 +400,15 @@ class AuthRepository(private val context: Context? = null) {
         }
     }
 
+    // Add to AuthRepository.kt
+    fun getCurrentUserId(): String {
+        return if (isGuestUser()) {
+            "" // Empty string for guest users
+        } else {
+            auth.currentUser?.uid ?: "" // Firebase UID for authenticated users
+        }
+    }
+
     // Query methods remain the same
     suspend fun getAllStaff(): Result<List<Staff>> {
         return try {

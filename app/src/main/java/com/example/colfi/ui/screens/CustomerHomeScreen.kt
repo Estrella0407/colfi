@@ -46,7 +46,7 @@ fun CustomerHomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
-    // ✅ Added WalletViewModel to observe live balance
+    // Added WalletViewModel to observe live balance
     val walletViewModel: WalletViewModel = viewModel()
     val walletState by walletViewModel.uiState.collectAsState()
 
@@ -89,7 +89,7 @@ fun CustomerHomeScreen(
                 HomeContent(
                     uiState = uiState,
                     homeViewModel = viewModel,
-                    walletState = walletState, // ✅ pass walletState
+                    walletState = walletState,
                     scrollState = scrollState,
                     userName = userName,
                     onNavigateToMenu = onNavigateToMenu,
@@ -155,7 +155,7 @@ private fun ErrorState(
 private fun HomeContent(
     uiState: com.example.colfi.ui.state.HomeUiState,
     homeViewModel: HomeViewModel,
-    walletState: WalletUiState, // ✅ added walletState
+    walletState: WalletUiState,
     scrollState: ScrollState,
     userName: String,
     onNavigateToMenu: () -> Unit,
@@ -195,7 +195,7 @@ private fun HomeContent(
             uiState.user != null && uiState.user is Customer -> {
                 UserInfoSection(
                     user = uiState.user as Customer,
-                    walletBalance = walletState.balance, // ✅ live balance
+                    walletBalance = walletState.balance,
                     onWalletClick = { onNavigateToWallet(userName) }
                 )
             }

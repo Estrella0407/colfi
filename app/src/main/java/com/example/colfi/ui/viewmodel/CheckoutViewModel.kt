@@ -1,12 +1,16 @@
 package com.example.colfi.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.colfi.data.model.CartItem
+import com.example.colfi.data.model.Customer
+import com.example.colfi.data.model.Staff
 import com.example.colfi.data.repository.AuthRepository
 import com.example.colfi.data.repository.CartRepository
 import com.example.colfi.data.repository.OrdersRepository
 import com.example.colfi.ui.state.CheckoutUiState
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -55,19 +59,7 @@ class CheckoutViewModel(
     ) {
         val currentState = _uiState.value
 
-        // Validate required fields
-        /*if (currentState.customerName.isBlank()) {
-            onFailure("Customer name is required"); return
-        }
-        if (currentState.customerPhone.isBlank()) {
-            onFailure("Phone number is required"); return
-        }
-        if (currentState.orderType.isBlank()) {
-            onFailure("Please select order type"); return
-        }
-        if (currentState.paymentMethod.isBlank()) {
-            onFailure("Please select payment method"); return
-        }*/
+        // Validation
         if (currentState.orderType == "delivery" && currentState.deliveryAddress.isBlank()) {
             onFailure("Delivery address is required"); return
         }
@@ -80,40 +72,35 @@ class CheckoutViewModel(
         viewModelScope.launch {
             try {
                 val totalAmount = cartItems.sumOf { it.menuItem.price * it.quantity }
+                val currentUser = FirebaseAuth.getInstance().currentUser
 
-                // Handle wallet payment (AuthRepository returns Result<Double>)
-                if (currentState.paymentMethod.equals("Wallet", ignoreCase = true)) {
-                    val walletResult = authRepository.getWalletBalance() // Result<Double>
-
-                    if (walletResult.isFailure) {
-                        val err = walletResult.exceptionOrNull()?.message ?: "Failed to get wallet balance"
-                        _uiState.value = currentState.copy(isPlacingOrder = false, errorMessage = err)
-                        onFailure(err)
-                        return@launch
-                    }
-
-                    val balance: Double = walletResult.getOrNull() ?: 0.0
-
-                    if (balance < totalAmount) {
-                        val err = "Not enough wallet balance"
-                        _uiState.value = currentState.copy(isPlacingOrder = false, errorMessage = err)
-                        onFailure(err)
-                        return@launch
-                    }
-
-                    // Deduct balance (updateWalletBalance returns Result<Unit>)
-                    val updateResult = authRepository.updateWalletBalance(balance - totalAmount)
-                    if (updateResult.isFailure) {
-                        val err = updateResult.exceptionOrNull()?.message ?: "Failed to update wallet balance"
-                        _uiState.value = currentState.copy(isPlacingOrder = false, errorMessage = err)
-                        onFailure(err)
-                        return@launch
-                    }
-                    // if success -> continue to place order
+                // Get customerId
+                val customerId = if (authRepository.isGuestUser()) {
+                    ""
+                } else {
+                    currentUser?.uid ?: ""
                 }
 
-                // Place order (assuming this returns Result<String>)
+                // IMPORTANT: Wallet payments require authenticated users
+                if (currentState.paymentMethod.equals("Wallet", ignoreCase = true)) {
+                    if (authRepository.isGuestUser()) {
+                        val err = "Please log in to use wallet payments"
+                        _uiState.value = currentState.copy(isPlacingOrder = false, errorMessage = err)
+                        onFailure(err)
+                        return@launch
+                    }
+
+                    if (currentUser == null) {
+                        val err = "User authentication required for wallet payments"
+                        _uiState.value = currentState.copy(isPlacingOrder = false, errorMessage = err)
+                        onFailure(err)
+                        return@launch
+                    }
+                }
+
+                // Place order - wallet deduction happens in OrdersRepository
                 val orderResult = ordersRepository.placeOrder(
+                    customerId = customerId,
                     customerName = currentState.customerName,
                     customerPhone = currentState.customerPhone,
                     cartItems = cartItems,
@@ -131,6 +118,7 @@ class CheckoutViewModel(
                     onSuccess(orderId)
                 } else {
                     val err = orderResult.exceptionOrNull()?.message ?: "Failed to place order"
+                    Log.e("CheckoutViewModel", "Order placement failed: $err")
                     _uiState.value = currentState.copy(isPlacingOrder = false, errorMessage = err)
                     onFailure(err)
                 }
