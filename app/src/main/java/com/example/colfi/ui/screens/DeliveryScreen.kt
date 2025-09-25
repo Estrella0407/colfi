@@ -1,6 +1,7 @@
 // DeliveryScreen.kt
 package com.example.colfi.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,6 +28,8 @@ import com.example.colfi.ui.viewmodel.CartViewModel
 import com.example.colfi.ui.viewmodel.PickUpViewModel
 import kotlinx.coroutines.delay
 import androidx.compose.ui.res.painterResource
+import com.example.colfi.DrawableMapper
+import com.example.colfi.data.model.MenuItem
 import com.example.colfi.ui.viewmodel.CheckoutViewModel
 import com.example.colfi.ui.viewmodel.DeliveryViewModel
 
@@ -44,12 +48,28 @@ fun DeliveryScreen(
     val cartUiState by cartViewModel.uiState.collectAsState()
     val cartItems = cartUiState.cartItems
 
+    val menuItem = MenuItem()
+
     var showSuccessDialog by remember { mutableStateOf(false) }
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     var showAddressPopup by remember { mutableStateOf(false) }
     var showInstructionPopup by remember { mutableStateOf(false) }
     var savedAddresses by remember { mutableStateOf(listOf<String>()) }
+
+    // Sync payment method between viewmodels
+    LaunchedEffect(uiState.paymentMethod) {
+        checkoutViewModel.updatePaymentMethod(uiState.paymentMethod)
+    }
+
+    LaunchedEffect(Unit) {
+        // Set customer info for the order
+        checkoutViewModel.updateCustomerInfo(
+            name = userName.ifEmpty { "Guest User" },
+            phone = "" // You'll need to get this from somewhere
+        )
+        checkoutViewModel.updateOrderType("delivery")
+    }
 
     // Update totals whenever cart changes
     LaunchedEffect(cartItems) {
@@ -162,12 +182,20 @@ fun DeliveryScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            AsyncImage(
-                                model = "https://via.placeholder.com/80x80.png?text=Drink",
-                                contentDescription = item.menuItem.name,
+                            Image(
+                                painter = painterResource(
+                                    id = if (menuItem.imageName.isNotEmpty()) {
+                                        menuItem.imageResId
+                                    } else {
+                                        // Fallback to category-based image or default
+                                        DrawableMapper.getDrawableForImageName(menuItem.category)
+                                    }
+                                ),
+                                contentDescription = menuItem.name,
                                 modifier = Modifier
                                     .size(64.dp)
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {

@@ -29,6 +29,7 @@ class PickUpViewModel : ViewModel() {
     // User changes payment method
     fun selectPaymentMethod(method: String) {
         _uiState.update { it.copy(paymentMethod = method) }
+
     }
 
     // Recalculate totals if needed

@@ -53,7 +53,7 @@ fun DineInScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // ✅ Header Row
+            // Header Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -74,7 +74,7 @@ fun DineInScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ✅ Dine In button
+            // Dine In button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -97,7 +97,7 @@ fun DineInScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ✅ Grid layout with spacing
+            // Grid layout with spacing
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 modifier = Modifier.fillMaxSize(),
@@ -122,7 +122,7 @@ fun DineInScreen(
             }
         }
 
-        // ✅ Confirm booking dialog
+        // Confirm booking dialog
         if (showConfirmDialog && selectedTableId != null) {
             AlertDialog(
                 onDismissRequest = { showConfirmDialog = false },

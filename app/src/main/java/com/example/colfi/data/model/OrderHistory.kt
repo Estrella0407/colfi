@@ -6,6 +6,7 @@ import java.util.*
 
 data class OrderHistory(
     val orderId: String = "",
+    val customerId: String = "",
     val customerName: String = "",
     val customerPhone: String = "",
     val orderItems: List<OrderItem> = emptyList(),

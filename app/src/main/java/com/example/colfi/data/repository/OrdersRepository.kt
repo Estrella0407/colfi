@@ -1,20 +1,43 @@
 // OrdersRepository.kt
 package com.example.colfi.data.repository
 
+import android.util.Log
 import com.example.colfi.data.model.OrderHistory
 import com.example.colfi.data.model.OrderItem
 import com.example.colfi.data.model.CartItem
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 
 class OrdersRepository {
     private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+    private val usersCollection = db.collection("users")
+    private val ordersCollection = db.collection("orders")
+    // Method for customers to place orders
+    companion object {
+        const val PAYMENT_METHOD_WALLET = "Colfi Wallet"
+    }
 
-    suspend fun getCurrentOrders(): Result<List<OrderHistory>> {
+    // OrdersRepository.kt
+    suspend fun getCurrentOrders(userId: String? = null): Result<List<OrderHistory>> {
         return try {
-            val snapshot = db.collection("orders")
-                .whereIn("orderStatus", listOf("pending", "preparing", "ready", "delivering"))
+            val query = if (userId != null) {
+                // For authenticated users, get their orders
+                db.collection("orders")
+                    .whereEqualTo("customerId", userId)
+                    .whereIn("orderStatus", listOf("pending", "preparing", "ready", "delivering"))
+            } else {
+                // For guest users, get orders with empty customerId
+                db.collection("orders")
+                    .whereEqualTo("customerId", "")
+                    .whereIn("orderStatus", listOf("pending", "preparing", "ready", "delivering"))
+            }
+
+            val snapshot = query
                 .orderBy("orderDate", Query.Direction.DESCENDING)
                 .get()
                 .await()
@@ -31,10 +54,21 @@ class OrdersRepository {
         }
     }
 
-    suspend fun getOrderHistory(): Result<List<OrderHistory>> {
+    suspend fun getOrderHistory(userId: String? = null): Result<List<OrderHistory>> {
         return try {
-            val snapshot = db.collection("orders")
-                .whereIn("orderStatus", listOf("completed", "cancelled"))
+            val query = if (userId != null) {
+                // For authenticated users, get their orders
+                db.collection("orders")
+                    .whereEqualTo("customerId", userId)
+                    .whereIn("orderStatus", listOf("completed", "cancelled"))
+            } else {
+                // For guest users, get orders with empty customerId
+                db.collection("orders")
+                    .whereEqualTo("customerId", "")
+                    .whereIn("orderStatus", listOf("completed", "cancelled"))
+            }
+
+            val snapshot = query
                 .orderBy("orderDate", Query.Direction.DESCENDING)
                 .get()
                 .await()
@@ -98,8 +132,8 @@ class OrdersRepository {
         }
     }
 
-    // Method for customers to place orders
     suspend fun placeOrder(
+        customerId: String,
         customerName: String,
         customerPhone: String,
         cartItems: List<CartItem>,
@@ -110,6 +144,9 @@ class OrdersRepository {
         specialInstructions: String = ""
     ): Result<String> {
         return try {
+            val currentUser = auth.currentUser
+
+            // Create order items and calculate total
             val orderItems = cartItems.map { cartItem ->
                 OrderItem(
                     id = cartItem.menuItem.id,
@@ -127,7 +164,9 @@ class OrdersRepository {
                 else -> 15
             }
 
+            // Create order object
             val orderHistory = OrderHistory(
+                customerId = customerId,
                 customerName = customerName,
                 customerPhone = customerPhone,
                 orderItems = orderItems,
@@ -142,12 +181,69 @@ class OrdersRepository {
                 tableNumber = tableNumber
             )
 
-            val documentRef = db.collection("orders").add(orderHistory).await()
-            Result.success(documentRef.id)
+            Log.d("OrdersRepository", "Placing order with payment method: $paymentMethod")
+
+            // Handle wallet payment
+            if (paymentMethod.equals(PAYMENT_METHOD_WALLET, ignoreCase = true)) {
+                processWalletPayment(currentUser, customerId, totalAmount, orderHistory)
+            } else {
+                // Regular payment
+                Log.d("OrdersRepository", "Processing regular payment...")
+                val documentRef = ordersCollection.add(orderHistory).await()
+                Log.d("OrdersRepository", "Regular payment successful. Order ID: ${documentRef.id}")
+                Result.success(documentRef.id)
+            }
+
         } catch (e: Exception) {
+            Log.e("OrdersRepository", "Error placing order: ${e.message}", e)
             Result.failure(e)
         }
     }
+
+    private suspend fun processWalletPayment(
+        currentUser: FirebaseUser?,
+        customerId: String,
+        totalAmount: Double,
+        orderHistory: OrderHistory
+    ): Result<String> {
+
+        // Validate for wallet payment
+        if (currentUser == null) {
+            return Result.failure(Exception("User must be logged in for wallet payments"))
+        }
+
+        if (customerId != currentUser.uid) {
+            return Result.failure(Exception("Order customer ID must match logged-in user for wallet payments"))
+        }
+
+        if (totalAmount <= 0) {
+            return Result.failure(Exception("Order total amount must be positive"))
+        }
+
+        val userDocRef = usersCollection.document(customerId)
+        val newOrderDocRef = ordersCollection.document()
+
+        db.runTransaction { transaction ->
+            val userSnapshot = transaction.get(userDocRef)
+            if (!userSnapshot.exists()) {
+                throw Exception("User wallet not found")
+            }
+
+            val currentBalance = userSnapshot.getDouble("walletBalance") ?: 0.0
+            if (currentBalance < totalAmount) {
+                throw Exception("Insufficient wallet balance. Current: RM$currentBalance, Required: RM$totalAmount")
+            }
+
+            val newBalance = currentBalance - totalAmount
+            transaction.update(userDocRef, "walletBalance", newBalance)
+            transaction.set(newOrderDocRef, orderHistory)
+            null
+        }.await()
+
+        Log.d("OrdersRepository", "Wallet payment successful. Order ID: ${newOrderDocRef.id}")
+        return Result.success(newOrderDocRef.id)
+    }
+
 
     // Real-time listener for staff orders
     fun observeCurrentOrders(onOrdersChanged: (List<OrderHistory>) -> Unit) {
