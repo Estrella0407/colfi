@@ -464,7 +464,7 @@ fun LandscapeInfoItem(
                 fontFamily = colfiFont,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Normal,
-                color = Color.Gray
+                color = DarkBrown1
             )
 
             Text(
@@ -509,9 +509,9 @@ fun LandscapeCafeInfoSection(modifier: Modifier = Modifier) {
                     Text(
                         text = "Main Products:",
                         fontFamily = colfiFont,
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Gray
+                        color = DarkBrown1
                     )
                     Text(
                         text = "Coffee | Tea",
@@ -528,9 +528,9 @@ fun LandscapeCafeInfoSection(modifier: Modifier = Modifier) {
                     Text(
                         text = "Operating Hours:",
                         fontFamily = colfiFont,
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Gray
+                        color = DarkBrown1
                     )
                     Text(
                         text = "07:00AM - 4:00PM (Mon - Fri)",
@@ -547,9 +547,9 @@ fun LandscapeCafeInfoSection(modifier: Modifier = Modifier) {
                     Text(
                         text = "Address:",
                         fontFamily = colfiFont,
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Gray
+                        color = DarkBrown1
                     )
                     Text(
                         text = "G-07, Ulsma Neo Asia, Jalan Raja Chulan,\nBukit Ceylon, 50200 Kuala Lumpur,\nUjilayah Persekutuan Kuala Lumpur",
@@ -632,7 +632,7 @@ fun LandscapeLeftSidebar(
             .padding(vertical = 16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         // Home (active)
         SidebarNavItem(
