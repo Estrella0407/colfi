@@ -26,6 +26,7 @@ import com.example.colfi.R
 import com.example.colfi.data.model.Customer
 import com.example.colfi.data.model.Guest
 import com.example.colfi.ui.state.WalletUiState
+import com.example.colfi.ui.theme.BackgroundColor
 import com.example.colfi.ui.theme.DarkBrown1
 import com.example.colfi.ui.theme.LightBrown2
 import com.example.colfi.ui.theme.LightCream1
@@ -76,7 +77,7 @@ fun CustomerHomeScreen(
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding()
-            .background(LightCream1)
+            .background(BackgroundColor)
     ) {
         when {
             uiState.isLoading -> {
@@ -628,7 +629,8 @@ fun LandscapeLeftSidebar(
             .width(80.dp)
             .fillMaxHeight()
             .background(Color.White)
-            .padding(vertical = 16.dp),
+            .padding(vertical = 16.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
