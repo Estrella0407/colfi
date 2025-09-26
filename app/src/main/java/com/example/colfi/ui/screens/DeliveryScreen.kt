@@ -57,18 +57,27 @@ fun DeliveryScreen(
     var showInstructionPopup by remember { mutableStateOf(false) }
     var savedAddresses by rememberSaveable { mutableStateOf(listOf<String>()) }
 
-    // Sync payment method between viewmodels
-    LaunchedEffect(uiState.paymentMethod) {
-        checkoutViewModel.updatePaymentMethod(uiState.paymentMethod)
-    }
-
-    LaunchedEffect(Unit) {
-        // Set customer info for the order
+    // Sync all data with CheckoutViewModel
+    LaunchedEffect(uiState.customerAddress, uiState.paymentMethod, userName) {
+        // Update customer info
         checkoutViewModel.updateCustomerInfo(
             name = userName.ifEmpty { "Guest User" },
             phone = "" // You'll need to get this from somewhere
         )
+
+        // Update order type
         checkoutViewModel.updateOrderType("delivery")
+
+        // Update delivery address (THIS IS WHAT'S MISSING!)
+        checkoutViewModel.updateDeliveryAddress(uiState.customerAddress)
+
+        // Update payment method
+        checkoutViewModel.updatePaymentMethod(uiState.paymentMethod)
+    }
+
+    // Also sync delivery instructions if needed
+    LaunchedEffect(uiState.deliveryInstruction) {
+        checkoutViewModel.updateSpecialInstructions(uiState.deliveryInstruction)
     }
 
     // Update totals whenever cart changes
@@ -79,6 +88,8 @@ fun DeliveryScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .background(LightCream1)
     ) {
         Column(
@@ -302,34 +313,73 @@ fun DeliveryScreen(
             }
 
             // Order Now button stays visible
-            Button(
-                onClick = {
-                    checkoutViewModel.placeOrder(
-                        cartItems = cartItems,
-                        onSuccess = {
-                            showSuccessDialog = true
-                            cartViewModel.clearCart()
-                        },
-                        onFailure = { msg: String ->
-                            errorMessage = msg
-                            showErrorDialog = true
-                        }
-                    )
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = LightBrown2),
-                shape = RoundedCornerShape(8.dp),
+            val isFormValid by remember(uiState.customerAddress, uiState.paymentMethod) {
+                derivedStateOf {
+                    uiState.customerAddress.isNotBlank() && uiState.paymentMethod.isNotBlank()
+                }
+            }
+
+            val errorText by remember(uiState.customerAddress, uiState.paymentMethod) {
+                derivedStateOf {
+                    when {
+                        uiState.customerAddress.isBlank() -> "Delivery address is required"
+                        uiState.paymentMethod.isBlank() -> "Please select a payment method"
+                        else -> null
+                    }
+                }
+            }
+
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
                     .padding(top = 8.dp)
             ) {
-                Text(
-                    "Order Now",
-                    fontFamily = colfiFont,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                // Show error message if form is invalid
+                if (errorText != null) {
+                    Text(
+                        text = errorText!!,
+                        color = Color.Red,
+                        fontFamily = colfiFont,
+                        fontSize = 14.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        if (isFormValid) {
+                            checkoutViewModel.placeOrder(
+                                cartItems = cartItems,
+                                onSuccess = {
+                                    showSuccessDialog = true
+                                    cartViewModel.clearCart()
+                                },
+                                onFailure = { msg: String ->
+                                    errorMessage = msg
+                                    showErrorDialog = true
+                                }
+                            )
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isFormValid) LightBrown2 else Color.Gray
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    enabled = isFormValid
+                ) {
+                    Text(
+                        if (isFormValid) "Order Now" else "Complete Form to Order",
+                        fontFamily = colfiFont,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
 
             // dialogs + popups remain same

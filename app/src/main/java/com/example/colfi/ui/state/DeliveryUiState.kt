@@ -10,5 +10,5 @@ data class DeliveryUiState(
     val subtotal: Double = 12.00,
     val serviceTax: Double = 0.72,
     val netTotal: Double = 12.72,
-    val deliveryFee : Double = 5.0
+    val deliveryFee : Double = 5.0,
 )

@@ -2,6 +2,7 @@
 package com.example.colfi.ui.screens
 
 import CheckoutViewModelFactory
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.data.model.CartItem
 import com.example.colfi.data.repository.AuthRepository
 import com.example.colfi.data.repository.OrdersRepository
+import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.viewmodel.CartViewModel
 import com.example.colfi.ui.viewmodel.CheckoutViewModel
 
@@ -36,6 +38,10 @@ fun CartScreen(
     var showClearCartDialog by remember { mutableStateOf(false) }
 
     Scaffold(
+        modifier = modifier
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .background(LightCream1),
         topBar = {
             TopAppBar(
                 title = {
@@ -134,7 +140,6 @@ fun CartScreen(
                 }
             }
         },
-        modifier = modifier
     ) { paddingValues ->
         Box(
             modifier = Modifier

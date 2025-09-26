@@ -106,7 +106,7 @@ fun LandscapeProductsScreen(
                 .fillMaxSize()
                 .weight(1f)
         ) {
-            // Header matching Figma design
+            // Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -166,28 +166,31 @@ fun PortraitProductsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 56.dp)
+                .padding(bottom = 96.dp)
         ) {
-            // Header matching Figma design
+            // Title row
             Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .background(LightCream1)
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
             ) {
                 Text(
                     text = "Product Management",
                     fontFamily = colfiFont,
-                    fontSize = 18.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
 
+                Spacer(modifier = Modifier.weight(1f))
+
                 Text(
                     text = "— COLFi —",
                     fontFamily = colfiFont,
-                    fontSize = 18.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
@@ -421,6 +424,8 @@ fun ProductItemCard(
                     .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
+
+            Spacer(modifier = Modifier.width(16.dp))
 
             // Product name - centered
             Text(

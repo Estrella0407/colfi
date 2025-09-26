@@ -184,7 +184,11 @@ fun MenuScreen(
                 onClick = onNavigateToCart,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = if (isLandscape) 16.dp else 80.dp),
+                    .padding(
+                        end = 16.dp,
+                        bottom = if (isLandscape) 16.dp else 112.dp
+                    )
+                    .navigationBarsPadding(), // ← Add this for extra safety
                 containerColor = Color(0xFFD2B48C),
                 contentColor = Color.Black
             ) {
@@ -289,45 +293,30 @@ fun MenuScreen(
 fun LandscapeHeader() {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.Start,
         modifier = Modifier
             .fillMaxWidth()
             .background(LightCream1)
+            .padding(horizontal = 16.dp, vertical = 16.dp)
     ) {
-        // Menu button on the left
-        Button(
-            onClick = { /* Already on menu */ },
-            modifier = Modifier
-                .padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
-                .width(80.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = LightBrown2
-            ),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text(
-                text = "Menu",
-                fontFamily = colfiFont,
-                fontSize = 14.sp,
-                color = Color.Black
-            )
-        }
+        Text(
+            text = "Menu",
+            fontFamily = colfiFont,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
 
-        // COLFi text on the right
+        Spacer(modifier = Modifier.weight(1f))
+
         Text(
             text = "— COLFi —",
-            modifier = Modifier.padding(end = 16.dp),
             fontFamily = colfiFont,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black
         )
     }
-
-    HorizontalDivider(
-        color = Color.Gray.copy(alpha = 0.3f),
-        thickness = 1.dp
-    )
 }
 
 @Composable
@@ -1154,111 +1143,6 @@ fun MenuItemCard(
         }
     }
 }
-
-
-@Composable
-fun SidebarNavigationButton(
-    text: String,
-    icon: ImageVector,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp), // Adjust padding as needed
-        shape = RoundedCornerShape(8.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) LightBrown2 else Color.Transparent,
-            contentColor = if (isSelected) Color.Black else LightCream1
-        )
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth() // Ensure Row takes full width of button for alignment
-        ) {
-            Icon(imageVector = icon, contentDescription = text, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(text, fontFamily = colfiFont, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-        }
-    }
-}
-
-// Also ensure LandscapeMenuContent is structured to use the space given to it
-@Composable
-fun LandscapeMenuContent(
-    uiState: MenuUiState,
-    menuViewModel: MenuViewModel,
-    screenWidth: Dp,
-    onItemDetailClick: (MenuItem) -> Unit,
-    onAddToCartClick: (MenuItem) -> Unit,
-    modifier: Modifier = Modifier // Add modifier parameter here
-) {
-    // Apply the modifier passed from MenuScreen (which includes .weight(1f))
-    Column(modifier = modifier.fillMaxSize()) { // Ensure this Column takes all available space
-        // Category tabs (horizontal) - This part remains fixed at the top of this content area
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(LightCream1)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(32.dp) // Or use a ScrollableTabRow for many categories
-        ) {
-            uiState.categories.forEach { category ->
-                LandscapeMenuCategory(
-                    category = menuViewModel.getCategoryDisplayName(category),
-                    categoryName = category,
-                    isSelected = uiState.selectedCategory == category,
-                    onCategorySelected = { menuViewModel.selectCategory(it) }
-                )
-            }
-        }
-
-        HorizontalDivider(
-            color = Color.Gray.copy(alpha = 0.3f),
-            thickness = 1.dp
-        )
-
-        // Menu items grid - This Box will take the remaining space and its content (LazyVerticalGrid) will scroll
-        Box(
-            modifier = Modifier
-                .weight(1f) // This allows the Box to take all remaining vertical space
-                .fillMaxWidth() // And full width
-            // padding(16.dp) // Padding for the grid content itself, handled in MenuItemsGrid's contentPadding
-        ) {
-            when {
-                uiState.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                        color = Color(0xFFD2B48C)
-                    )
-                }
-                uiState.errorMessage.isNotEmpty() -> {
-                    // ... error message ...
-                }
-                uiState.menuItems.isEmpty() -> {
-                    // ... empty message ...
-                }
-                else -> {
-                    val columns = when {
-                        screenWidth < 600.dp -> 2
-                        screenWidth < 900.dp -> 3
-                        else -> 4
-                    }
-                    MenuItemsGrid(
-                        menuItems = uiState.menuItems,
-                        columns = columns,
-                        onItemDetailClick = onItemDetailClick,
-                        onAddToCartClick = onAddToCartClick
-                    )
-                }
-            }
-        }
-    }
-}
-
 
 @Composable
 fun ItemSelectionPopUp(

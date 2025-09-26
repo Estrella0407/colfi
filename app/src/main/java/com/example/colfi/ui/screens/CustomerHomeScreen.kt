@@ -77,7 +77,7 @@ fun CustomerHomeScreen(
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding()
-            .background(BackgroundColor)
+            .background(Color.White)
     ) {
         when {
             uiState.isLoading -> {

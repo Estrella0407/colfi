@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.colfi.R
@@ -371,7 +372,6 @@ fun PortraitStaffOrdersScreen(
     }
 }
 
-// The rest of your existing composables remain exactly the same...
 @Composable
 fun OrderCard(
     order: OrderHistory,
@@ -598,7 +598,7 @@ fun OngoingOrdersHeader(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(LightCream1)
-                .padding(horizontal = 16.dp, vertical = 16.dp)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
             Text(
                 text = "Ongoing Orders",
@@ -625,31 +625,31 @@ fun OngoingOrdersHeader(
                 .fillMaxWidth()
                 .background(Color(0xFFF5F5DC))
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp) // Reduced spacing
         ) {
             TabButton(
-                text = "All (${orderCounts.all})",
+                text = "All\n(${orderCounts.all})", // Two lines
                 isSelected = selectedTab == "all",
                 onClick = { onTabSelected("all") },
                 modifier = Modifier.weight(1f)
             )
 
             TabButton(
-                text = "Dine In (${orderCounts.dineIn})",
+                text = "Dine In\n(${orderCounts.dineIn})", // Two lines
                 isSelected = selectedTab == "dine_in",
                 onClick = { onTabSelected("dine_in") },
                 modifier = Modifier.weight(1f)
             )
 
             TabButton(
-                text = "Pick Up (${orderCounts.pickUp})",
+                text = "Pick Up\n(${orderCounts.pickUp})", // Two lines
                 isSelected = selectedTab == "pick_up",
                 onClick = { onTabSelected("pick_up") },
                 modifier = Modifier.weight(1f)
             )
 
             TabButton(
-                text = "Delivery (${orderCounts.delivery})",
+                text = "Delivery\n(${orderCounts.delivery})", // Two lines
                 isSelected = selectedTab == "delivery",
                 onClick = { onTabSelected("delivery") },
                 modifier = Modifier.weight(1f)
@@ -667,7 +667,7 @@ fun TabButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.height(52.dp), // Fixed height for two lines
         colors = ButtonDefaults.buttonColors(
             containerColor = if (isSelected) DarkBrown1 else Color.Transparent,
             contentColor = if (isSelected) LightCream1 else DarkBrown1
@@ -675,13 +675,17 @@ fun TabButton(
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = if (isSelected) 4.dp else 0.dp
         ),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp) // Reduced padding
     ) {
         Text(
             text = text,
             fontFamily = colfiFont,
-            fontSize = 11.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+            fontSize = 10.sp, // Slightly smaller font
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            textAlign = TextAlign.Center,
+            maxLines = 2, // Allow two lines
+            lineHeight = 12.sp
         )
     }
 }
