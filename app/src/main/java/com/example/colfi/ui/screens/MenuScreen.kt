@@ -21,8 +21,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AlertDialog
@@ -68,6 +70,9 @@ import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.CartViewModel
 import com.example.colfi.ui.viewmodel.MenuViewModel
+import androidx.compose.foundation.layout.heightIn
+import com.example.colfi.ui.theme.LightBrown1
+import androidx.compose.foundation.layout.defaultMinSize
 
 @Composable
 fun MenuScreen(
@@ -539,7 +544,8 @@ fun MenuItemsList(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(bottom = 120.dp)
     ) {
         items(menuItems) { item ->
             MenuItemCard(
@@ -668,7 +674,7 @@ fun ItemSelectionPopUp(
 
     val isTemperatureApplicable = menuItem.category.lowercase() in listOf("coffee", "tea")
     val isSugarLevelApplicable = menuItem.category.lowercase() in listOf("coffee", "tea", "non-coffee")
-
+    val scrollState = rememberScrollState()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -680,7 +686,12 @@ fun ItemSelectionPopUp(
             )
         },
         text = {
-            Column(horizontalAlignment = Alignment.Start) {
+            Column(
+                horizontalAlignment = Alignment.Start,
+                modifier = Modifier
+                    .verticalScroll(scrollState)
+                    .fillMaxHeight(fraction = 0.8f)
+            ) {
                 Image(
                     painter = painterResource(
                         id = if (menuItem.imageName.isNotEmpty()) {
@@ -736,13 +747,26 @@ fun ItemSelectionPopUp(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                if (isSugarLevelApplicable) {
-                    Text("Sugar Level:", fontFamily = colfiFont, fontWeight = FontWeight.SemiBold)
+                if (isSugarLevelApplicable)
+                {
+                    Text(
+                        "Sugar Level:",
+                        fontFamily = colfiFont,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    val sugarOptions = CartItem.SUGAR_LEVEL_OPTIONS.filter { it.isNotBlank() }
+
+                    // Split into two rows
+                    val firstRow = sugarOptions.take(2)   // First 2 options
+                    val secondRow = sugarOptions.drop(2)  // Remaining options
+
+                    // First row
                     Row(
                         Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        CartItem.SUGAR_LEVEL_OPTIONS.forEach { sugar ->
+                        firstRow.forEach { sugar ->
                             Button(
                                 onClick = {
                                     selectedSugarLevel = sugar
@@ -757,10 +781,50 @@ fun ItemSelectionPopUp(
                                         MaterialTheme.colorScheme.onPrimary
                                     else
                                         MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            ) { Text(sugar) }
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 48.dp)
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Text(sugar, maxLines = 1, softWrap = true)
+                            }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Second row
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        secondRow.forEach { sugar ->
+                            Button(
+                                onClick = {
+                                    selectedSugarLevel = sugar
+                                    showValidationError = false
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (selectedSugarLevel == sugar)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = if (selectedSugarLevel == sugar)
+                                        MaterialTheme.colorScheme.onPrimary
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 48.dp)
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Text(sugar, maxLines = 1, softWrap = true)
+                            }
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 

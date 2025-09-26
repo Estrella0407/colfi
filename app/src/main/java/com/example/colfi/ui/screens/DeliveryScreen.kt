@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,8 +43,7 @@ fun DeliveryScreen(
     onEditOrderClick: () -> Unit,
     viewModel: DeliveryViewModel = viewModel(),
     checkoutViewModel: CheckoutViewModel = viewModel(),
-
-    ) {
+) {
     val uiState by viewModel.uiState.collectAsState()
     val cartUiState by cartViewModel.uiState.collectAsState()
     val cartItems = cartUiState.cartItems
@@ -55,7 +55,7 @@ fun DeliveryScreen(
     var errorMessage by remember { mutableStateOf("") }
     var showAddressPopup by remember { mutableStateOf(false) }
     var showInstructionPopup by remember { mutableStateOf(false) }
-    var savedAddresses by remember { mutableStateOf(listOf<String>()) }
+    var savedAddresses by rememberSaveable { mutableStateOf(listOf<String>()) }
 
     // Sync payment method between viewmodels
     LaunchedEffect(uiState.paymentMethod) {
@@ -89,6 +89,7 @@ fun DeliveryScreen(
             val scrollState = rememberScrollState()
             Column(
                 modifier = Modifier
+                    .weight(1f) // 👈 makes scrollable part take remaining space
                     .fillMaxWidth()
                     .verticalScroll(scrollState)
             ) {
@@ -187,7 +188,6 @@ fun DeliveryScreen(
                                     id = if (menuItem.imageName.isNotEmpty()) {
                                         menuItem.imageResId
                                     } else {
-                                        // Fallback to category-based image or default
                                         DrawableMapper.getDrawableForImageName(menuItem.category)
                                     }
                                 ),
@@ -252,7 +252,6 @@ fun DeliveryScreen(
                     }
                 }
 
-
                 // Payment methods
                 Text(
                     "Payment Methods",
@@ -302,14 +301,14 @@ fun DeliveryScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Bottom Order Button
+            // ✅ Order Now button stays visible
             Button(
                 onClick = {
                     checkoutViewModel.placeOrder(
                         cartItems = cartItems,
                         onSuccess = {
                             showSuccessDialog = true
-                            cartViewModel.clearCart() // make sure cart clears
+                            cartViewModel.clearCart()
                         },
                         onFailure = { msg: String ->
                             errorMessage = msg
@@ -322,6 +321,7 @@ fun DeliveryScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
+                    .padding(top = 8.dp)
             ) {
                 Text(
                     "Order Now",
@@ -332,6 +332,7 @@ fun DeliveryScreen(
                 )
             }
 
+            // ✅ dialogs + popups remain same
             if (showSuccessDialog) {
                 LaunchedEffect(Unit) { delay(3000); showSuccessDialog = false }
 
@@ -468,7 +469,8 @@ fun AddressPopup(
                                 .padding(4.dp)
                         ) {
                             Text("• $address", modifier = Modifier.weight(1f))
-                            Text("Use",
+                            Text(
+                                "Use",
                                 color = DarkBrown1,
                                 modifier = Modifier.clickable {
                                     onSelect(address)

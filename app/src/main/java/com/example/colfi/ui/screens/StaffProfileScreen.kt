@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.colfi.ui.theme.DarkBrown1
 import com.example.colfi.ui.theme.LightBrown2
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.LightCream2
@@ -156,13 +157,11 @@ fun StaffProfileScreen(
                     // User info cards using actual data
                     ProfileInfoCard(
                         title = "Name",
-                        value = staff!!.displayName ?: "Not provided",
-                        isEditable = true
+                        value = staff!!.displayName ?: "Not provided"
                     )
                     ProfileInfoCard(
                         title = "Email",
-                        value = staff!!.email ?: "Not provided",
-                        isEditable = true
+                        value = staff!!.email ?: "Not provided"
                     )
 
                     // Staff info section using actual data if available
@@ -224,8 +223,6 @@ fun StaffProfileScreen(
                         }
                     }
 
-                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
-
                     // Logout button
                     Button(
                         onClick = { viewModel.logout() },
@@ -233,7 +230,7 @@ fun StaffProfileScreen(
                             .fillMaxWidth()
                             .padding(vertical = 16.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFD32F2F)
+                            containerColor = LightBrown2,
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {

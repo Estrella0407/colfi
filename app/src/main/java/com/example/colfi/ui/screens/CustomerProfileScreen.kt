@@ -64,6 +64,7 @@ fun CustomerProfileScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .padding(16.dp)
+                .padding(bottom = 80.dp)
         ) {
             // Header
             Text(
@@ -110,13 +111,11 @@ fun CustomerProfileScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Info cards
-                    ProfileInfoCard("Name", user!!.displayName ?: "Not provided", isEditable = true)
-                    ProfileInfoCard("Email", user!!.email ?: "Not provided", isEditable = true)
+                    ProfileInfoCard("Name", user!!.displayName ?: "Not provided")
+                    ProfileInfoCard("Email", user!!.email ?: "Not provided")
                     ProfileInfoCard("Wallet", "RM ${String.format("%.2f", user!!.walletBalance)}")
                     ProfileInfoCard("Points", user!!.points.toString())
                     ProfileInfoCard("Vouchers", user!!.vouchers.toString())
-
-                    Spacer(modifier = Modifier.weight(1f))
 
                     // Logout button
                     Button(
@@ -124,7 +123,7 @@ fun CustomerProfileScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                        colors = ButtonDefaults.buttonColors(containerColor = LightBrown2),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text("Log Out", fontFamily = colfiFont, fontSize = 16.sp, color = Color.White)
