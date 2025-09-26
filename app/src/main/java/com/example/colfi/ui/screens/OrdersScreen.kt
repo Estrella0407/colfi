@@ -1,3 +1,4 @@
+// OrdersScreen.kt
 package com.example.colfi.ui.screens
 
 import androidx.compose.foundation.background
@@ -13,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -20,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.data.model.OrderHistory
 import com.example.colfi.data.model.OrderItem
+import com.example.colfi.ui.state.OrdersUiState
 import com.example.colfi.ui.theme.LightBrown2
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
@@ -33,22 +36,84 @@ fun OrdersScreen(
     onNavigateToCustomerProfile: () -> Unit,
     viewModel: OrdersViewModel = viewModel()
 ) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
     val uiState by viewModel.uiState.collectAsState()
     val selectedTab by viewModel.selectedTab.collectAsState()
 
-    Box(
+    if (isLandscape) {
+        // Landscape layout with sidebar
+        LandscapeOrdersScreen(
+            onHomeClick = onNavigateToHome,
+            onMenuClick = onNavigateToMenu,
+            onOrdersClick = { },
+            onCustomerProfileClick = onNavigateToCustomerProfile,
+            isHomeSelected = false,
+            isMenuSelected = false,
+            isOrdersSelected = true,
+            isCustomerProfileSelected = false,
+            uiState = uiState,
+            selectedTab = selectedTab,
+            onTabSelected = { viewModel.selectTab(it) },
+            onCancelOrder = { orderId -> viewModel.cancelOrder(orderId) }
+        )
+    } else {
+        // Portrait layout (your existing code)
+        PortraitOrdersScreen(
+            userName = userName,
+            onNavigateToMenu = onNavigateToMenu,
+            onNavigateToHome = onNavigateToHome,
+            onNavigateToCustomerProfile = onNavigateToCustomerProfile,
+            uiState = uiState,
+            selectedTab = selectedTab,
+            onTabSelected = { viewModel.selectTab(it) },
+            onCancelOrder = { orderId -> viewModel.cancelOrder(orderId) }
+        )
+    }
+}
+
+@Composable
+fun LandscapeOrdersScreen(
+    onHomeClick: () -> Unit,
+    onMenuClick: () -> Unit,
+    onOrdersClick: () -> Unit,
+    onCustomerProfileClick: () -> Unit,
+    isHomeSelected: Boolean,
+    isMenuSelected: Boolean,
+    isOrdersSelected: Boolean,
+    isCustomerProfileSelected: Boolean,
+    uiState: OrdersUiState,
+    selectedTab: String,
+    onTabSelected: (String) -> Unit,
+    onCancelOrder: (String) -> Unit
+) {
+    Row(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .navigationBarsPadding() // Ensure navigation bar padding is applied
+            .navigationBarsPadding()
             .background(LightCream1)
     ) {
+        // Sidebar on the left
+        LandscapeLeftSidebar(
+            onHomeClick = onHomeClick,
+            onMenuClick = onMenuClick,
+            onOrdersClick = onOrdersClick,
+            onCustomerProfileClick = onCustomerProfileClick,
+            isHomeSelected = isHomeSelected,
+            isMenuSelected = isMenuSelected,
+            isOrdersSelected = isOrdersSelected,
+            isCustomerProfileSelected = isCustomerProfileSelected
+        )
+
+        // Main content area
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 56.dp) // Adjust for bottom navigation height
+                .weight(1f)
         ) {
-            OrderHeader(selectedTab = selectedTab, onTabSelected = { viewModel.selectTab(it) })
+            OrderHeader(selectedTab = selectedTab, onTabSelected = onTabSelected)
 
             Box(
                 modifier = Modifier.fillMaxSize()
@@ -91,14 +156,89 @@ fun OrdersScreen(
                         OrdersList(
                             orders = uiState.orders,
                             isCurrentOrder = selectedTab == "current",
-                            onCancelOrder = { orderId -> viewModel.cancelOrder(orderId) }
+                            onCancelOrder = onCancelOrder
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PortraitOrdersScreen(
+    userName: String,
+    onNavigateToMenu: () -> Unit,
+    onNavigateToHome: () -> Unit,
+    onNavigateToCustomerProfile: () -> Unit,
+    uiState: OrdersUiState,
+    selectedTab: String,
+    onTabSelected: (String) -> Unit,
+    onCancelOrder: (String) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .background(LightCream1)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 56.dp)
+        ) {
+            OrderHeader(selectedTab = selectedTab, onTabSelected = onTabSelected)
+
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                when {
+                    uiState.isLoading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center),
+                            color = Color(0xFFD2B48C)
+                        )
+                    }
+                    uiState.errorMessage.isNotEmpty() -> {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Error loading orders",
+                                fontFamily = colfiFont,
+                                color = Color.Red,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = uiState.errorMessage,
+                                fontFamily = colfiFont,
+                                color = Color.Gray,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                    uiState.orders.isEmpty() -> {
+                        Text(
+                            text = if (selectedTab == "current") "No current orders" else "No order history",
+                            modifier = Modifier.align(Alignment.Center),
+                            fontFamily = colfiFont,
+                            color = Color.Gray
+                        )
+                    }
+                    else -> {
+                        OrdersList(
+                            orders = uiState.orders,
+                            isCurrentOrder = selectedTab == "current",
+                            onCancelOrder = onCancelOrder
                         )
                     }
                 }
             }
         }
 
-        // Bottom Navigation Bar - Fixed at bottom
+        // Bottom Navigation Bar - Fixed at bottom (portrait only)
         BottomNavigation(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -116,6 +256,7 @@ fun OrdersScreen(
     }
 }
 
+// The rest of your existing composables remain exactly the same...
 @Composable
 fun OrderHeader(
     selectedTab: String,
@@ -488,7 +629,6 @@ fun OrderCard(
     }
 }
 
-
 @Composable
 fun OrderItemRow(item: OrderItem) {
     Row(
@@ -522,50 +662,50 @@ fun OrderItemRow(item: OrderItem) {
     }
 }
 
-    private fun getOrderTypeDisplay(orderType: String): String {
-        return when (orderType.lowercase()) {
-            "dine_in" -> "Dine-in"
-            "pick_up" -> "Pickup"
-            "delivery" -> "Delivery"
-            else -> orderType.replace("_", " ").capitalize()
-        }
+private fun getOrderTypeDisplay(orderType: String): String {
+    return when (orderType.lowercase()) {
+        "dine_in" -> "Dine-in"
+        "pick_up" -> "Pickup"
+        "delivery" -> "Delivery"
+        else -> orderType.replace("_", " ").capitalize()
     }
+}
 
-    private fun getStatusMessage(status: String, orderType: String): String {
-        return when {
-            orderType.lowercase() == "dine_in" && status.lowercase() == "pending" ->
-                "Table reserved! Waiting for your arrival..."
-            orderType.lowercase() == "dine_in" && status.lowercase() == "preparing" ->
-                "Dine-in session active! Your food is being prepared"
-            orderType.lowercase() == "dine_in" && status.lowercase() == "ready" ->
-                "Your table is ready with food served!"
-            orderType.lowercase() == "dine_in" ->
-                "Dine-in session in progress"
-            status.lowercase() == "pending" -> "Order received! Preparing your order..."
-            status.lowercase() == "preparing" -> "Getting your order ready!"
-            status.lowercase() == "ready" -> "Your order is ready for pickup!"
-            status.lowercase() == "delivering" -> "Your order is on the way!"
-            else -> "Order processing..."
-        }
+private fun getStatusMessage(status: String, orderType: String): String {
+    return when {
+        orderType.lowercase() == "dine_in" && status.lowercase() == "pending" ->
+            "Table reserved! Waiting for your arrival..."
+        orderType.lowercase() == "dine_in" && status.lowercase() == "preparing" ->
+            "Dine-in session active! Your food is being prepared"
+        orderType.lowercase() == "dine_in" && status.lowercase() == "ready" ->
+            "Your table is ready with food served!"
+        orderType.lowercase() == "dine_in" ->
+            "Dine-in session in progress"
+        status.lowercase() == "pending" -> "Order received! Preparing your order..."
+        status.lowercase() == "preparing" -> "Getting your order ready!"
+        status.lowercase() == "ready" -> "Your order is ready for pickup!"
+        status.lowercase() == "delivering" -> "Your order is on the way!"
+        else -> "Order processing..."
     }
+}
 
-    private fun formatTime(orderDate: Any): String {
-        return try {
-            when (orderDate) {
-                is Long -> {
-                    // Handle timestamp (milliseconds)
-                    val date = java.util.Date(orderDate)
-                    val sdf = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
-                    sdf.format(date)
-                }
-                is String -> {
-                    // Handle string date (your existing logic)
-                    val time = orderDate.split(" ").getOrNull(1)?.substring(0, 5) ?: "11:15"
-                    "$time AM"
-                }
-                else -> "11:15 AM"
+private fun formatTime(orderDate: Any): String {
+    return try {
+        when (orderDate) {
+            is Long -> {
+                // Handle timestamp (milliseconds)
+                val date = java.util.Date(orderDate)
+                val sdf = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+                sdf.format(date)
             }
-        } catch (e: Exception) {
-            "11:15 AM"
+            is String -> {
+                // Handle string date (your existing logic)
+                val time = orderDate.split(" ").getOrNull(1)?.substring(0, 5) ?: "11:15"
+                "$time AM"
+            }
+            else -> "11:15 AM"
         }
+    } catch (e: Exception) {
+        "11:15 AM"
     }
+}

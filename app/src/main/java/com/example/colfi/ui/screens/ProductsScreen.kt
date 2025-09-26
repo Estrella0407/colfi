@@ -4,32 +4,13 @@ package com.example.colfi.ui.screens
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,21 +44,69 @@ fun ProductsScreen(
     onNavigateToStaffProfile: () -> Unit,
     viewModel: ProductsViewModel = viewModel()
 ) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
     val uiState by viewModel.uiState.collectAsState()
 
-    Box(
+    if (isLandscape) {
+        // Landscape layout with sidebar
+        LandscapeProductsScreen(
+            onStaffOrdersClick = onNavigateToStaffOrders,
+            onProductsClick = { },
+            onStaffProfileClick = onNavigateToStaffProfile,
+            uiState = uiState,
+            onToggleProductAvailability = { item -> viewModel.toggleProductAvailability(item) },
+            onCategorySelected = { category -> viewModel.selectCategory(category) },
+            onToggleLowStockFilter = { viewModel.toggleLowStockFilter() }
+        )
+    } else {
+        // Portrait layout (your existing code)
+        PortraitProductsScreen(
+            onNavigateToStaffOrders = onNavigateToStaffOrders,
+            onNavigateToStaffProfile = onNavigateToStaffProfile,
+            uiState = uiState,
+            onToggleProductAvailability = { item -> viewModel.toggleProductAvailability(item) },
+            onCategorySelected = { category -> viewModel.selectCategory(category) },
+            onToggleLowStockFilter = { viewModel.toggleLowStockFilter() }
+        )
+    }
+}
+
+@Composable
+fun LandscapeProductsScreen(
+    onStaffOrdersClick: () -> Unit,
+    onProductsClick: () -> Unit,
+    onStaffProfileClick: () -> Unit,
+    uiState: ProductsUiState,
+    onToggleProductAvailability: (MenuItem) -> Unit,
+    onCategorySelected: (String) -> Unit,
+    onToggleLowStockFilter: () -> Unit
+) {
+    Row(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding()
             .background(LightCream1)
     ) {
+        // Sidebar on the left
+        StaffLandscapeLeftSidebar(
+            onStaffOrdersClick = onStaffOrdersClick,
+            onProductsClick = onProductsClick,
+            onStaffProfileClick = onStaffProfileClick,
+            isStaffOrdersSelected = false,
+            isProductsSelected = true,
+            isStaffProfileSelected = false
+        )
+
+        // Main content area
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 56.dp)
+                .weight(1f)
         ) {
-            // Header matching Figma design - FIXED alignment
+            // Header matching Figma design
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -102,12 +132,78 @@ fun ProductsScreen(
             }
 
             // Category dropdown and availability indicator
-            ProductsHeader(viewModel, uiState)
+            ProductsHeader(
+                uiState = uiState,
+                onCategorySelected = onCategorySelected,
+                onToggleLowStockFilter = onToggleLowStockFilter
+            )
 
             // Product list
             ProductList(
                 products = uiState.filteredItems,
-                onToggleAvailability = { item -> viewModel.toggleProductAvailability(item) }
+                onToggleAvailability = onToggleProductAvailability
+            )
+        }
+    }
+}
+
+@Composable
+fun PortraitProductsScreen(
+    onNavigateToStaffOrders: () -> Unit,
+    onNavigateToStaffProfile: () -> Unit,
+    uiState: ProductsUiState,
+    onToggleProductAvailability: (MenuItem) -> Unit,
+    onCategorySelected: (String) -> Unit,
+    onToggleLowStockFilter: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .background(LightCream1)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 56.dp)
+        ) {
+            // Header matching Figma design
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Product Management",
+                    fontFamily = colfiFont,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Text(
+                    text = "— COLFi —",
+                    fontFamily = colfiFont,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+            }
+
+            // Category dropdown and availability indicator
+            ProductsHeader(
+                uiState = uiState,
+                onCategorySelected = onCategorySelected,
+                onToggleLowStockFilter = onToggleLowStockFilter
+            )
+
+            // Product list
+            ProductList(
+                products = uiState.filteredItems,
+                onToggleAvailability = onToggleProductAvailability
             )
         }
 
@@ -128,8 +224,9 @@ fun ProductsScreen(
 
 @Composable
 fun ProductsHeader(
-    viewModel: ProductsViewModel,
-    uiState: ProductsUiState
+    uiState: ProductsUiState,
+    onCategorySelected: (String) -> Unit,
+    onToggleLowStockFilter: () -> Unit
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
@@ -139,10 +236,13 @@ fun ProductsHeader(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Category dropdown - FIXED to match reference image
-            DropdownSelection(viewModel, uiState)
+            // Category dropdown
+            DropdownSelection(
+                selectedCategory = uiState.selectedCategory,
+                onCategorySelected = onCategorySelected
+            )
 
-            // Availability indicators - FIXED layout
+            // Availability indicators
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -185,7 +285,7 @@ fun ProductsHeader(
             }
         }
 
-        // Low Stock toggle button - MOVED to separate row to match reference
+        // Low Stock toggle button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -193,11 +293,11 @@ fun ProductsHeader(
             horizontalArrangement = Arrangement.Start
         ) {
             Button(
-                onClick = { viewModel.toggleLowStockFilter() },
+                onClick = onToggleLowStockFilter,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (uiState.showLowStockOnly) Color(0xFFD32F2F) else LightBrown2
                 ),
-                shape = RoundedCornerShape(20.dp), // More rounded like reference
+                shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.width(100.dp)
             ) {
                 Text(
@@ -212,7 +312,10 @@ fun ProductsHeader(
 }
 
 @Composable
-fun DropdownSelection(viewModel: ProductsViewModel, uiState: ProductsUiState) {
+fun DropdownSelection(
+    selectedCategory: String,
+    onCategorySelected: (String) -> Unit
+) {
     val categories = listOf("All", "Coffee", "Non-coffee", "Tea", "Add On")
     var expanded by remember { mutableStateOf(false) }
 
@@ -225,7 +328,7 @@ fun DropdownSelection(viewModel: ProductsViewModel, uiState: ProductsUiState) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = uiState.selectedCategory,
+                text = selectedCategory,
                 fontFamily = colfiFont,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
@@ -250,12 +353,12 @@ fun DropdownSelection(viewModel: ProductsViewModel, uiState: ProductsUiState) {
                         Text(
                             text = category,
                             fontFamily = colfiFont,
-                            color = if (category == uiState.selectedCategory) LightBrown2 else DarkBrown1,
-                            fontWeight = if (category == uiState.selectedCategory) FontWeight.Bold else FontWeight.Normal
+                            color = if (category == selectedCategory) LightBrown2 else DarkBrown1,
+                            fontWeight = if (category == selectedCategory) FontWeight.Bold else FontWeight.Normal
                         )
                     },
                     onClick = {
-                        viewModel.selectCategory(category)
+                        onCategorySelected(category)
                         expanded = false
                     }
                 )
@@ -314,7 +417,7 @@ fun ProductItemCard(
                 ),
                 contentDescription = menuItem.name,
                 modifier = Modifier
-                    .size(60.dp) // Smaller image to match reference
+                    .size(60.dp)
                     .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
@@ -329,11 +432,11 @@ fun ProductItemCard(
                 modifier = Modifier.weight(1f)
             )
 
-            // Interactive availability toggle - FIXED
+            // Interactive availability toggle
             Switch(
                 checked = menuItem.availability,
                 onCheckedChange = { onToggleAvailability(menuItem) },
-                enabled = true, // Now interactive
+                enabled = true,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
                     checkedTrackColor = Color(0xFF4CAF50),
