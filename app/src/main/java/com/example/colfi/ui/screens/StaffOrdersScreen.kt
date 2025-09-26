@@ -22,6 +22,8 @@ import com.example.colfi.ui.theme.colfiFont
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.ui.viewmodel.StaffOrdersViewModel
 import com.example.colfi.data.model.OrderHistory
+import com.example.colfi.ui.theme.LightBrown1
+import com.example.colfi.ui.theme.LightBrown2
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
@@ -321,12 +323,13 @@ fun OrderCard(
                             Button(
                                 onClick = { onStatusUpdate(order.orderId, "preparing") },
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                                colors = ButtonDefaults.buttonColors(containerColor = LightBrown1 )
                             ) {
                                 Text(
                                     text = "Start Preparing",
                                     fontSize = 12.sp,
-                                    fontFamily = colfiFont
+                                    fontFamily = colfiFont,
+                                    color = Color.White
                                 )
                             }
                         }
@@ -334,7 +337,7 @@ fun OrderCard(
                             Button(
                                 onClick = { onStatusUpdate(order.orderId, "ready") },
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                                colors = ButtonDefaults.buttonColors(containerColor =LightBrown2)
                             ) {
                                 Text(
                                     text = "Mark Ready",
@@ -350,12 +353,13 @@ fun OrderCard(
                                     onStatusUpdate(order.orderId, nextStatus)
                                 },
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9C27B0))
+                                colors = ButtonDefaults.buttonColors(containerColor = DarkBrown1)
                             ) {
                                 Text(
                                     text = if (order.orderType == "delivery") "Start Delivery" else "Complete",
                                     fontSize = 12.sp,
-                                    fontFamily = colfiFont
+                                    fontFamily = colfiFont,
+                                    color = Color.White
                                 )
                             }
                         }

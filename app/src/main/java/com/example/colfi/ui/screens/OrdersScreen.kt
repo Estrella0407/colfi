@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.colfi.data.model.OrderHistory
 import com.example.colfi.data.model.OrderItem
+import com.example.colfi.ui.theme.BackgroundColor
 import com.example.colfi.ui.theme.LightBrown2
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
@@ -41,7 +42,7 @@ fun OrdersScreen(
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding() // Ensure navigation bar padding is applied
-            .background(LightCream1)
+            .background(BackgroundColor)
     ) {
         Column(
             modifier = Modifier

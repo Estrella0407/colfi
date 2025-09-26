@@ -14,4 +14,5 @@ val LightCream1 = Color(0xFFEDE4D1)
 
 val DarkBrown1 = Color(0xFF473F30)
 
+val Yellow = Color(0xFFC28F2F)
 val BackgroundColor = Color(0xFFF8F7E9)

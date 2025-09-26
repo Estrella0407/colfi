@@ -59,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -77,6 +78,7 @@ import com.example.colfi.data.model.CartItem
 import com.example.colfi.data.model.MenuItem
 import com.example.colfi.data.repository.CartRepository
 import com.example.colfi.ui.state.MenuUiState
+import com.example.colfi.ui.theme.BackgroundColor
 import com.example.colfi.ui.theme.DarkBrown1
 import com.example.colfi.ui.theme.LightBrown2
 import com.example.colfi.ui.theme.LightCream1
@@ -133,7 +135,9 @@ fun MenuScreen(
 
                 // Main Content Area
                 Column(
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
                 ) {
                     // Header with COLFi title
                     LandscapeHeader()
@@ -288,7 +292,7 @@ fun LandscapeHeader() {
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
+            .background(LightCream1)
     ) {
         // Menu button on the left
         Button(
@@ -341,7 +345,7 @@ fun LandscapeMenuContent(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.White.copy(alpha = 0.8f))
+                .background(LightCream1)
         ) {
             Column {
                 // Category selection bar
@@ -460,6 +464,7 @@ fun LandscapeMenuCategory(
             )
         }
     }
+
 }
 
 @Composable
@@ -640,49 +645,35 @@ fun MenuItemCardCompact(
             .fillMaxWidth()
             .clickable(
                 enabled = !isOutOfStock,
-                onClick = { onItemDetailClick(menuItem) }
+                onClick = {
+                    if (!isOutOfStock) {
+                        onItemDetailClick(menuItem)
+                    }
+                }
             ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isOutOfStock) Color.LightGray.copy(alpha = 0.3f) else Color.White
+
+            containerColor = if (isOutOfStock) Color.LightGray.copy(alpha = 0.5f) else Color.White
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isOutOfStock) 2.dp else 4.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isOutOfStock) 1.dp else 2.dp
+        )
     ) {
         Box {
-            // Out of Stock Overlay
-            if (isOutOfStock) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(Color.Black.copy(alpha = 0.4f))
-                        .clip(RoundedCornerShape(12.dp))
-                )
-
-                // Out of Stock Text
-                Text(
-                    text = "OUT OF STOCK",
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .background(Color.Red.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    color = Color.White,
-                    fontFamily = colfiFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 10.sp
-                )
-            }
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(12.dp)
             ) {
-                // Image
+                // Image Section
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(100.dp)
+                        .height(100.dp) // Fixed height for compact image
                         .clip(RoundedCornerShape(8.dp))
+                        .background(Color.LightGray.copy(alpha = 0.2f))
                 ) {
                     Image(
                         painter = painterResource(
@@ -693,32 +684,25 @@ fun MenuItemCardCompact(
                             }
                         ),
                         contentDescription = menuItem.name,
-                        modifier = Modifier
-                            .fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
-                        colorFilter = if (isOutOfStock) ColorFilter.tint(Color.Gray) else null
-                    )
 
-                    if (isOutOfStock) {
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .background(Color.Gray.copy(alpha = 0.6f))
-                                .clip(RoundedCornerShape(8.dp))
-                        )
-                    }
+                        colorFilter = if (isOutOfStock) ColorFilter.tint(
+                            Color.Gray,
+                            blendMode = BlendMode.Saturation
+                        ) else null
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Content
                 Column {
                     Text(
                         text = menuItem.name,
                         fontFamily = colfiFont,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isOutOfStock) Color.Gray else Color.Black,
+                        color = if (isOutOfStock) Color.DarkGray else Color.Black,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -729,7 +713,7 @@ fun MenuItemCardCompact(
                             text = menuItem.description,
                             fontFamily = colfiFont,
                             fontSize = 10.sp,
-                            color = if (isOutOfStock) Color.Gray.copy(alpha = 0.7f) else Color.Gray,
+                            color = if (isOutOfStock) Color.Gray else Color.DarkGray,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -737,8 +721,6 @@ fun MenuItemCardCompact(
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
-
-                // Price and Add button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -752,33 +734,67 @@ fun MenuItemCardCompact(
                         color = if (isOutOfStock) Color.Gray else Color(0xFFD2B48C)
                     )
 
-                    // Add to cart button
                     Button(
-                        onClick = { onAddToCartClick(menuItem) },
+                        onClick = {
+
+                            if (!isOutOfStock) {
+                                onAddToCartClick(menuItem)
+                            }
+                        },
                         enabled = !isOutOfStock,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isOutOfStock) Color.Gray else Color(0xFFD2B48C),
-                            disabledContainerColor = Color.Gray.copy(alpha = 0.5f)
+                            containerColor = Color(0xFFD2B48C),
+                            disabledContainerColor = Color.DarkGray.copy(alpha = 0.3f),
+                            contentColor = Color.Black,
+                            disabledContentColor = Color.Gray.copy(alpha = 0.7f)
                         ),
                         shape = RoundedCornerShape(6.dp),
                         modifier = Modifier.height(28.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                        contentPadding = PaddingValues(
+                            horizontal = 8.dp,
+                            vertical = 2.dp
+                        ) // Compact padding
                     ) {
                         Text(
-                            text = if (isOutOfStock) "Out" else "Add",
+                            text = "Add",
                             fontFamily = colfiFont,
-                            fontSize = 10.sp,
-                            color = if (isOutOfStock) Color.White else Color.Black
+                            fontSize = 8.sp
                         )
                     }
+                }
+            }
+
+
+            if (isOutOfStock) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .clip(RoundedCornerShape(12.dp))
+                )
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .background(
+                            Color.Red.copy(alpha = 0.9f),
+                            RoundedCornerShape(4.dp)
+                        ) // Red background for text
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        text = "OUT OF STOCK",
+                        color = Color.White,
+                        fontFamily = colfiFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.sp,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
     }
 }
-
-// ... (Keep all other existing composables like ConfirmationDialog, MenuCategory, MenuItemsList, etc. unchanged)
-
 @Composable
 fun ConfirmationDialog(
     cartItem: CartItem,
@@ -1003,34 +1019,13 @@ fun MenuItemCard(
             ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isOutOfStock) Color.LightGray.copy(alpha = 0.3f) else Color.White
+            // Keep the container slightly dimmed to indicate unavailability
+            containerColor = if (isOutOfStock) Color.LightGray.copy(alpha = 0.6f) else Color.White
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isOutOfStock) 2.dp else 4.dp)
     ) {
-        Box {
-            // Out of Stock Overlay
-            if (isOutOfStock) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(Color.Black.copy(alpha = 0.4f))
-                        .clip(RoundedCornerShape(12.dp))
-                )
-
-                // Out of Stock Text
-                Text(
-                    text = "OUT OF STOCK",
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .background(Color.Red.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    color = Color.White,
-                    fontFamily = colfiFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp
-                )
-            }
-
+        Box { // Use a Box to layer elements
+            // Main content of the card
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1038,7 +1033,7 @@ fun MenuItemCard(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Image with grey filter when out of stock
+                // Image
                 Box(
                     modifier = Modifier.size(100.dp)
                 ) {
@@ -1047,6 +1042,8 @@ fun MenuItemCard(
                             id = if (menuItem.imageName.isNotEmpty()) {
                                 menuItem.imageResId
                             } else {
+                                // Make sure DrawableMapper.getDrawableForImageName exists and returns a valid @DrawableRes
+                                // For example: R.drawable.default_category_icon
                                 DrawableMapper.getDrawableForImageName(menuItem.category)
                             }
                         ),
@@ -1055,33 +1052,25 @@ fun MenuItemCard(
                             .size(100.dp)
                             .clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop,
-                        colorFilter = if (isOutOfStock) ColorFilter.tint(Color.Gray) else null
+                        // Apply a greyscale filter directly to the image when out of stock
+                        colorFilter = if (isOutOfStock) ColorFilter.tint(Color.Gray, blendMode = BlendMode.Saturation) else null
                     )
-
-                    if (isOutOfStock) {
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .background(Color.Gray.copy(alpha = 0.6f))
-                                .clip(RoundedCornerShape(8.dp))
-                        )
-                    }
                 }
 
                 // Content
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxHeight(),
+                        .fillMaxHeight(), // Ensure column takes available height
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
                         Text(
                             text = menuItem.name,
-                            fontFamily = colfiFont,
+                            fontFamily = colfiFont, // Ensure colfiFont is defined
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isOutOfStock) Color.Gray else Color.Black
+                            color = if (isOutOfStock) Color.DarkGray else Color.Black
                         )
 
                         if (menuItem.description.isNotEmpty()) {
@@ -1090,13 +1079,14 @@ fun MenuItemCard(
                                 text = menuItem.description,
                                 fontFamily = colfiFont,
                                 fontSize = 14.sp,
-                                color = if (isOutOfStock) Color.Gray.copy(alpha = 0.7f) else Color.Gray,
-                                maxLines = 2
+                                color = if (isOutOfStock) Color.Gray else Color.DarkGray,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp)) // Ensure spacing
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1111,31 +1101,164 @@ fun MenuItemCard(
                             color = if (isOutOfStock) Color.Gray else Color(0xFFD2B48C)
                         )
 
-                        // Add to cart button - disabled when out of stock
                         Button(
                             onClick = { onAddToCartClick(menuItem) },
                             enabled = !isOutOfStock,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isOutOfStock) Color.Gray else Color(0xFFD2B48C),
-                                disabledContainerColor = Color.Gray.copy(alpha = 0.5f)
+                                containerColor = Color(0xFFD2B48C), // Normal color
+                                disabledContainerColor = Color.Gray.copy(alpha = 0.5f) // Disabled color
                             ),
                             shape = RoundedCornerShape(6.dp),
-                            modifier = Modifier.height(32.dp),
+                            modifier = Modifier.height(36.dp), // Slightly increased height for better touch
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                text = if (isOutOfStock) "Out of Stock" else "Add",
+                                // The button is disabled, so its text doesn't need to change to "Out of Stock"
+                                // The visual state of the button (disabled) and the overlay will indicate this.
+                                text = "Add",
                                 fontFamily = colfiFont,
-                                fontSize = 12.sp,
-                                color = if (isOutOfStock) Color.White else Color.Black
+                                fontSize = 14.sp, // Slightly increased for readability
+                                color = Color.Black // Keep text color consistent
                             )
                         }
                     }
                 }
             }
+
+            // Out of Stock Overlay and Text - Drawn on top of the Row content
+            if (isOutOfStock) {
+                // Overlay to dim the entire card content
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(Color.Black.copy(alpha = 0.5f)) // Adjust alpha for desired dimness
+                        .clip(RoundedCornerShape(12.dp)) // Match card's shape
+                )
+
+                // "OUT OF STOCK" Text, centered on top of the overlay
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .background(Color.Red.copy(alpha = 0.9f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 16.dp, vertical = 8.dp) // Increased padding
+                ) {
+                    Text(
+                        text = "OUT OF STOCK",
+                        color = Color.White,
+                        fontFamily = colfiFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp // Slightly larger for prominence
+                    )
+                }
+            }
         }
     }
 }
+
+
+@Composable
+fun SidebarNavigationButton(
+    text: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp), // Adjust padding as needed
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isSelected) LightBrown2 else Color.Transparent,
+            contentColor = if (isSelected) Color.Black else LightCream1
+        )
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth() // Ensure Row takes full width of button for alignment
+        ) {
+            Icon(imageVector = icon, contentDescription = text, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(text, fontFamily = colfiFont, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+// Also ensure LandscapeMenuContent is structured to use the space given to it
+@Composable
+fun LandscapeMenuContent(
+    uiState: MenuUiState,
+    menuViewModel: MenuViewModel,
+    screenWidth: Dp,
+    onItemDetailClick: (MenuItem) -> Unit,
+    onAddToCartClick: (MenuItem) -> Unit,
+    modifier: Modifier = Modifier // Add modifier parameter here
+) {
+    // Apply the modifier passed from MenuScreen (which includes .weight(1f))
+    Column(modifier = modifier.fillMaxSize()) { // Ensure this Column takes all available space
+        // Category tabs (horizontal) - This part remains fixed at the top of this content area
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(LightCream1)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(32.dp) // Or use a ScrollableTabRow for many categories
+        ) {
+            uiState.categories.forEach { category ->
+                LandscapeMenuCategory(
+                    category = menuViewModel.getCategoryDisplayName(category),
+                    categoryName = category,
+                    isSelected = uiState.selectedCategory == category,
+                    onCategorySelected = { menuViewModel.selectCategory(it) }
+                )
+            }
+        }
+
+        HorizontalDivider(
+            color = Color.Gray.copy(alpha = 0.3f),
+            thickness = 1.dp
+        )
+
+        // Menu items grid - This Box will take the remaining space and its content (LazyVerticalGrid) will scroll
+        Box(
+            modifier = Modifier
+                .weight(1f) // This allows the Box to take all remaining vertical space
+                .fillMaxWidth() // And full width
+            // padding(16.dp) // Padding for the grid content itself, handled in MenuItemsGrid's contentPadding
+        ) {
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = Color(0xFFD2B48C)
+                    )
+                }
+                uiState.errorMessage.isNotEmpty() -> {
+                    // ... error message ...
+                }
+                uiState.menuItems.isEmpty() -> {
+                    // ... empty message ...
+                }
+                else -> {
+                    val columns = when {
+                        screenWidth < 600.dp -> 2
+                        screenWidth < 900.dp -> 3
+                        else -> 4
+                    }
+                    MenuItemsGrid(
+                        menuItems = uiState.menuItems,
+                        columns = columns,
+                        onItemDetailClick = onItemDetailClick,
+                        onAddToCartClick = onAddToCartClick
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 fun ItemSelectionPopUp(
