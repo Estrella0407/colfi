@@ -1,17 +1,20 @@
 // CustomerHomeScreen.kt
 package com.example.colfi.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -24,6 +27,7 @@ import com.example.colfi.data.model.Customer
 import com.example.colfi.data.model.Guest
 import com.example.colfi.ui.state.WalletUiState
 import com.example.colfi.ui.theme.DarkBrown1
+import com.example.colfi.ui.theme.LightBrown2
 import com.example.colfi.ui.theme.LightCream1
 import com.example.colfi.ui.theme.colfiFont
 import com.example.colfi.ui.viewmodel.CustomerProfileViewModel
@@ -45,6 +49,10 @@ fun CustomerHomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+
+    // Get screen configuration for responsive layout
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp >= configuration.screenHeightDp
 
     // Added WalletViewModel to observe live balance
     val walletViewModel: WalletViewModel = viewModel()
@@ -68,6 +76,7 @@ fun CustomerHomeScreen(
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding()
+            .background(LightCream1)
     ) {
         when {
             uiState.isLoading -> {
@@ -86,73 +95,65 @@ fun CustomerHomeScreen(
             }
 
             else -> {
-                HomeContent(
-                    uiState = uiState,
-                    homeViewModel = viewModel,
-                    walletState = walletState,
-                    scrollState = scrollState,
-                    userName = userName,
-                    onNavigateToMenu = onNavigateToMenu,
-                    onNavigateToOrders = onNavigateToOrders,
-                    onNavigateToCustomerProfile = onNavigateToCustomerProfile,
-                    onNavigateToDineIn = onNavigateToDineIn,
-                    onNavigateToPickUp = onNavigateToPickUp,
-                    onNavigateToDelivery = onNavigateToDelivery,
-                    onNavigateToWallet = onNavigateToWallet,
-                    onNavigateToLogin = onNavigateToLogin,
-                )
-
-                BottomNavigation(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .navigationBarsPadding(),
-                    onHomeClick = { /* Already on Home */ },
-                    onMenuClick = onNavigateToMenu,
-                    onOrdersClick = onNavigateToOrders,
-                    onCustomerProfileClick = onNavigateToCustomerProfile,
-                    isHomeSelected = true
-                )
+                if (isLandscape) {
+                    // LANDSCAPE LAYOUT
+                    LandscapeHomeContent(
+                        uiState = uiState,
+                        homeViewModel = viewModel,
+                        walletState = walletState,
+                        userName = userName,
+                        onNavigateToMenu = onNavigateToMenu,
+                        onNavigateToOrders = onNavigateToOrders,
+                        onNavigateToCustomerProfile = onNavigateToCustomerProfile,
+                        onNavigateToDineIn = onNavigateToDineIn,
+                        onNavigateToPickUp = onNavigateToPickUp,
+                        onNavigateToDelivery = onNavigateToDelivery,
+                        onNavigateToWallet = onNavigateToWallet,
+                        onNavigateToLogin = onNavigateToLogin,
+                    )
+                } else {
+                    // PORTRAIT LAYOUT
+                    PortraitHomeContent(
+                        uiState = uiState,
+                        homeViewModel = viewModel,
+                        walletState = walletState,
+                        scrollState = scrollState,
+                        userName = userName,
+                        onNavigateToMenu = onNavigateToMenu,
+                        onNavigateToOrders = onNavigateToOrders,
+                        onNavigateToCustomerProfile = onNavigateToCustomerProfile,
+                        onNavigateToDineIn = onNavigateToDineIn,
+                        onNavigateToPickUp = onNavigateToPickUp,
+                        onNavigateToDelivery = onNavigateToDelivery,
+                        onNavigateToWallet = onNavigateToWallet,
+                        onNavigateToLogin = onNavigateToLogin,
+                    )
+                }
             }
         }
-    }
-}
 
-@Composable
-private fun ErrorState(
-    errorMessage: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.barista),
-            contentDescription = "Error",
-            modifier = Modifier.size(64.dp),
-            tint = Color.Gray
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = errorMessage,
-            textAlign = TextAlign.Center,
-            color = Color.Gray,
-            fontFamily = colfiFont
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = onRetry,
-            colors = ButtonDefaults.buttonColors(containerColor = DarkBrown1)
-        ) {
-            Text("Retry", color = Color.White)
+        // Bottom Navigation Bar - Only show in portrait mode
+        if (!isLandscape) {
+            BottomNavigation(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                onHomeClick = { /* Already on Home */ },
+                onMenuClick = onNavigateToMenu,
+                onOrdersClick = onNavigateToOrders,
+                onCustomerProfileClick = onNavigateToCustomerProfile,
+                isHomeSelected = true,
+                isMenuSelected = false,
+                isOrdersSelected = false,
+                isCustomerProfileSelected = false
+            )
         }
     }
 }
 
 @Composable
-private fun HomeContent(
+fun PortraitHomeContent(
     uiState: com.example.colfi.ui.state.HomeUiState,
     homeViewModel: HomeViewModel,
     walletState: WalletUiState,
@@ -210,6 +211,523 @@ private fun HomeContent(
         Spacer(modifier = Modifier.height(24.dp))
         CafeInfoSection()
         Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+fun LandscapeHomeContent(
+    uiState: com.example.colfi.ui.state.HomeUiState,
+    homeViewModel: HomeViewModel,
+    walletState: WalletUiState,
+    userName: String,
+    onNavigateToMenu: () -> Unit,
+    onNavigateToOrders: () -> Unit,
+    onNavigateToCustomerProfile: () -> Unit,
+    onNavigateToDineIn: () -> Unit,
+    onNavigateToPickUp: () -> Unit,
+    onNavigateToDelivery: () -> Unit,
+    onNavigateToWallet: (String) -> Unit,
+    onNavigateToLogin: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        // Left Sidebar Navigation (fixed position)
+        LandscapeLeftSidebar(
+            onHomeClick = { /* Already on home */ },
+            onMenuClick = onNavigateToMenu,
+            onOrdersClick = onNavigateToOrders,
+            onCustomerProfileClick = onNavigateToCustomerProfile,
+            isHomeSelected = true,
+            isMenuSelected = false,
+            isOrdersSelected = false,
+            isCustomerProfileSelected = false
+        )
+
+        // Divider
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(1.dp)
+                .background(Color.Gray.copy(alpha = 0.3f))
+        )
+
+        // Main Content (scrollable)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState())
+        ) {
+            // UPPER SECTION: Barista, Quote, and Order Options
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                Box(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // Header with Barista and Quote
+                    LandscapeHomeHeader(randomQuote = uiState.randomQuote)
+                }
+
+                Box(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // Order Options
+                    OrderOptions(
+                        onDineInClick = onNavigateToDineIn,
+                        onPickUpClick = onNavigateToPickUp,
+                        onDeliveryClick = onNavigateToDelivery,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            // LOWER SECTION: User Info and Store Info side by side
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                // Left Side: User Info (Wallet, Vouchers, Points)
+                Box(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    when {
+                        uiState.user != null && uiState.user is Customer -> {
+                            LandscapeUserInfoSection(
+                                user = uiState.user as Customer,
+                                walletBalance = walletState.balance,
+                                onWalletClick = { onNavigateToWallet(userName) }
+                            )
+                        }
+                        uiState.guest != null -> {
+                            LandscapeGuestInfoSection(
+                                guest = uiState.guest!!,
+                                onLogoutClick = onNavigateToLogin
+                            )
+                        }
+                    }
+                }
+
+                // Right Side: Store Info (Address, Time)
+                Box(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    LandscapeCafeInfoSection()
+                }
+            }
+
+            // Add some bottom padding for better scrolling
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+fun LandscapeHomeHeader(randomQuote: String, modifier: Modifier = Modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Barista Image on the left
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.barista),
+                contentDescription = "COLFi Barista Character",
+                modifier = Modifier.fillMaxSize(),
+                tint = Color.Unspecified
+            )
+        }
+
+        // Random quote in the center
+        Box(
+            modifier = Modifier
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = randomQuote,
+                fontFamily = colfiFont,
+                fontSize = 16.sp,
+                fontStyle = FontStyle.Italic,
+                textAlign = TextAlign.Center,
+                lineHeight = 20.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun LandscapeUserInfoSection(
+    user: Customer,
+    walletBalance: Double,
+    modifier: Modifier = Modifier,
+    onWalletClick: () -> Unit
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // Welcome message and COLFI title
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Welcome, ${user.displayName}",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontFamily = colfiFont
+                )
+
+                Text(
+                    text = "COLFI",
+                    fontFamily = colfiFont,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Wallet, Points, Vouchers in a column (vertically stacked)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Wallet
+                LandscapeInfoItem(
+                    title = "Wallet(RM)",
+                    value = "RM %.2f".format(walletBalance),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onWalletClick() }
+                )
+
+                // Points
+                LandscapeInfoItem(
+                    title = "Points",
+                    value = user.points.toString(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Voucher
+                LandscapeInfoItem(
+                    title = "Voucher",
+                    value = user.vouchers.toString(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun LandscapeInfoItem(
+    title: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = LightBrown2),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                fontFamily = colfiFont,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color.Gray
+            )
+
+            Text(
+                text = value,
+                fontFamily = colfiFont,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = DarkBrown1
+            )
+        }
+    }
+}
+
+@Composable
+fun LandscapeCafeInfoSection(modifier: Modifier = Modifier) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Colfi Cafe",
+                fontFamily = colfiFont,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Store Information in column layout
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Main Products
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Main Products:",
+                        fontFamily = colfiFont,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = "Coffee | Tea",
+                        fontFamily = colfiFont,
+                        fontSize = 14.sp,
+                        color = DarkBrown1
+                    )
+                }
+
+                // Operating Hours
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Operating Hours:",
+                        fontFamily = colfiFont,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = "07:00AM - 4:00PM (Mon - Fri)",
+                        fontFamily = colfiFont,
+                        fontSize = 14.sp,
+                        color = DarkBrown1
+                    )
+                }
+
+                // Address
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Address:",
+                        fontFamily = colfiFont,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = "G-07, Ulsma Neo Asia, Jalan Raja Chulan,\nBukit Ceylon, 50200 Kuala Lumpur,\nUjilayah Persekutuan Kuala Lumpur",
+                        fontFamily = colfiFont,
+                        fontSize = 12.sp,
+                        color = DarkBrown1,
+                        lineHeight = 14.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LandscapeGuestInfoSection(
+    guest: Guest,
+    onLogoutClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE4D1)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Browsing as Guest",
+                fontFamily = colfiFont,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Sign up to earn points and access your wallet!",
+                fontFamily = colfiFont,
+                fontSize = 12.sp,
+                color = Color.Gray,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onLogoutClick,
+                colors = ButtonDefaults.buttonColors(containerColor = DarkBrown1),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Sign In / Sign Up",
+                    color = Color.White,
+                    fontFamily = colfiFont,
+                    fontSize = 14.sp
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+fun LandscapeLeftSidebar(
+    onHomeClick: () -> Unit,
+    onMenuClick: () -> Unit,
+    onOrdersClick: () -> Unit,
+    onCustomerProfileClick: () -> Unit,
+    isHomeSelected: Boolean,
+    isMenuSelected: Boolean,
+    isOrdersSelected: Boolean,
+    isCustomerProfileSelected: Boolean
+) {
+    Column(
+        modifier = Modifier
+            .width(80.dp)
+            .fillMaxHeight()
+            .background(Color.White)
+            .padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Home (active)
+        SidebarNavItem(
+            iconRes = R.drawable.homepage_icon,
+            label = "Home",
+            isSelected = isHomeSelected,
+            onClick = onHomeClick
+        )
+
+        // Menu
+        SidebarNavItem(
+            iconRes = R.drawable.menu,
+            label = "Menu",
+            isSelected = isMenuSelected,
+            onClick = onMenuClick
+        )
+
+        // Orders
+        SidebarNavItem(
+            iconRes = R.drawable.order_history,
+            label = "Orders",
+            isSelected = isOrdersSelected,
+            onClick = onOrdersClick
+        )
+
+        // Profile
+        SidebarNavItem(
+            iconRes = R.drawable.profile_icon,
+            label = "Me",
+            isSelected = isCustomerProfileSelected,
+            onClick = onCustomerProfileClick
+        )
+    }
+}
+
+@Composable
+fun SidebarNavItem(
+    iconRes: Int,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(vertical = 8.dp)
+    ) {
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = label,
+            modifier = Modifier.size(32.dp),
+            tint = if (isSelected) Color(0xFFD2B48C) else Color.Gray
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = label,
+            fontFamily = colfiFont,
+            fontSize = 12.sp,
+            color = if (isSelected) Color(0xFFD2B48C) else Color.Gray,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+        )
+    }
+}
+
+@Composable
+private fun ErrorState(
+    errorMessage: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.barista),
+            contentDescription = "Error",
+            modifier = Modifier.size(64.dp),
+            tint = Color.Gray
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = errorMessage,
+            textAlign = TextAlign.Center,
+            color = Color.Gray,
+            fontFamily = colfiFont
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(containerColor = DarkBrown1)
+        ) {
+            Text("Retry", color = Color.White)
+        }
     }
 }
 
@@ -611,4 +1129,3 @@ fun BottomNavItem(
         )
     }
 }
-

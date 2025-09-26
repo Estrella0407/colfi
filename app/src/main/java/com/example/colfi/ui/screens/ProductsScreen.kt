@@ -19,8 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -47,7 +46,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import com.example.colfi.DrawableMapper
 import com.example.colfi.data.model.MenuItem
 import com.example.colfi.ui.state.ProductsUiState
@@ -78,23 +76,39 @@ fun ProductsScreen(
                 .fillMaxSize()
                 .padding(bottom = 56.dp)
         ) {
-            // Header matching Figma design
-            Text(
-                text = "Product Management — COLFi —",
-                fontFamily = colfiFont,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color.Black,
+            // Header matching Figma design - FIXED alignment
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
-            )
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Product Management",
+                    fontFamily = colfiFont,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Text(
+                    text = "— COLFi —",
+                    fontFamily = colfiFont,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+            }
 
             // Category dropdown and availability indicator
             ProductsHeader(viewModel, uiState)
 
-            // Product list (using your existing filtering)
-            ProductList(products = uiState.filteredItems)
+            // Product list
+            ProductList(
+                products = uiState.filteredItems,
+                onToggleAvailability = { item -> viewModel.toggleProductAvailability(item) }
+            )
         }
 
         StaffBottomNavigation(
@@ -125,37 +139,22 @@ fun ProductsHeader(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Category dropdown
+            // Category dropdown - FIXED to match reference image
             DropdownSelection(viewModel, uiState)
 
-            // Low stock toggle and availability indicators
+            // Availability indicators - FIXED layout
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Low stock toggle button
-                Button(
-                    onClick = { viewModel.updateItemAvailability() },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (uiState.showLowStockOnly) Color(0xFFD32F2F) else Color.Gray
-                    ),
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Text(
-                        text = "Low Stock",
-                        fontFamily = colfiFont,
-                        fontSize = 12.sp,
-                        color = Color.White
-                    )
-                }
-
+                // Sold Out indicator
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(12.dp)
+                            .size(8.dp)
                             .background(Color(0xFFF43636), shape = androidx.compose.foundation.shape.CircleShape)
                     )
                     Text(
@@ -166,13 +165,14 @@ fun ProductsHeader(
                     )
                 }
 
+                // Available indicator
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(12.dp)
+                            .size(8.dp)
                             .background(Color(0xFF4CAF50), shape = androidx.compose.foundation.shape.CircleShape)
                     )
                     Text(
@@ -184,6 +184,30 @@ fun ProductsHeader(
                 }
             }
         }
+
+        // Low Stock toggle button - MOVED to separate row to match reference
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Button(
+                onClick = { viewModel.toggleLowStockFilter() },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (uiState.showLowStockOnly) Color(0xFFD32F2F) else LightBrown2
+                ),
+                shape = RoundedCornerShape(20.dp), // More rounded like reference
+                modifier = Modifier.width(100.dp)
+            ) {
+                Text(
+                    text = "Low Stock",
+                    fontFamily = colfiFont,
+                    fontSize = 12.sp,
+                    color = Color.White
+                )
+            }
+        }
     }
 }
 
@@ -193,19 +217,25 @@ fun DropdownSelection(viewModel: ProductsViewModel, uiState: ProductsUiState) {
     var expanded by remember { mutableStateOf(false) }
 
     Box {
-        Button(
-            onClick = { expanded = true },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = LightBrown2
-            ),
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier.width(120.dp)
+        // Custom dropdown design to match reference image
+        Row(
+            modifier = Modifier
+                .clickable { expanded = true }
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "${uiState.selectedCategory} ▼",
+                text = uiState.selectedCategory,
                 fontFamily = colfiFont,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
                 color = Color.Black
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Dropdown",
+                tint = Color.Black,
+                modifier = Modifier.size(20.dp)
             )
         }
 
@@ -220,7 +250,8 @@ fun DropdownSelection(viewModel: ProductsViewModel, uiState: ProductsUiState) {
                         Text(
                             text = category,
                             fontFamily = colfiFont,
-                            color = if (category == uiState.selectedCategory) LightBrown2 else DarkBrown1
+                            color = if (category == uiState.selectedCategory) LightBrown2 else DarkBrown1,
+                            fontWeight = if (category == uiState.selectedCategory) FontWeight.Bold else FontWeight.Normal
                         )
                     },
                     onClick = {
@@ -235,17 +266,19 @@ fun DropdownSelection(viewModel: ProductsViewModel, uiState: ProductsUiState) {
 
 @Composable
 fun ProductList(
-    products: List<MenuItem>
+    products: List<MenuItem>,
+    onToggleAvailability: (MenuItem) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(products) { item ->
             ProductItemCard(
-                menuItem = item
+                menuItem = item,
+                onToggleAvailability = { onToggleAvailability(item) }
             )
         }
     }
@@ -254,6 +287,7 @@ fun ProductList(
 @Composable
 fun ProductItemCard(
     menuItem: MenuItem,
+    onToggleAvailability: (MenuItem) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -265,7 +299,7 @@ fun ProductItemCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Product image
@@ -280,12 +314,12 @@ fun ProductItemCard(
                 ),
                 contentDescription = menuItem.name,
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(60.dp) // Smaller image to match reference
                     .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
 
-            // Product name
+            // Product name - centered
             Text(
                 text = menuItem.name,
                 fontFamily = colfiFont,
@@ -295,16 +329,16 @@ fun ProductItemCard(
                 modifier = Modifier.weight(1f)
             )
 
-            // Availability indicator (visual only)
+            // Interactive availability toggle - FIXED
             Switch(
                 checked = menuItem.availability,
-                onCheckedChange = { }, // Disabled - just for visual indication
-                enabled = false, // Makes it non-interactive
+                onCheckedChange = { onToggleAvailability(menuItem) },
+                enabled = true, // Now interactive
                 colors = SwitchDefaults.colors(
-                    disabledCheckedThumbColor = Color.White,
-                    disabledCheckedTrackColor = Color(0xFF4CAF50),
-                    disabledUncheckedThumbColor = Color.White,
-                    disabledUncheckedTrackColor = Color(0xFFF43636)
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color(0xFF4CAF50),
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = Color(0xFF9E9E9E)
                 )
             )
         }

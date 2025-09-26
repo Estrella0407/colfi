@@ -44,10 +44,6 @@ class CheckoutViewModel(
         _uiState.value = _uiState.value.copy(deliveryAddress = address)
     }
 
-    fun updateTableNumber(tableNumber: String) {
-        _uiState.value = _uiState.value.copy(tableNumber = tableNumber)
-    }
-
     fun updateSpecialInstructions(instructions: String) {
         _uiState.value = _uiState.value.copy(specialInstructions = instructions)
     }
@@ -107,7 +103,6 @@ class CheckoutViewModel(
                     orderType = currentState.orderType,
                     paymentMethod = currentState.paymentMethod,
                     deliveryAddress = currentState.deliveryAddress.takeIf { it.isNotBlank() },
-                    tableNumber = currentState.tableNumber.takeIf { it.isNotBlank() },
                     specialInstructions = currentState.specialInstructions
                 )
 

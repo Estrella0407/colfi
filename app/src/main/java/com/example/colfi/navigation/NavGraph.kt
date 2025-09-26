@@ -194,7 +194,7 @@ fun NavGraph(navController: NavHostController) {
                         restoreState = true
                     }
                 },
-                cartRespository = cartRepositoryFromApplication
+                cartRepository = cartRepositoryFromApplication
             )
         }
 

@@ -22,7 +22,6 @@ class OrdersRepository {
         const val PAYMENT_METHOD_WALLET = "Colfi Wallet"
     }
 
-    // OrdersRepository.kt
     suspend fun getCurrentOrders(userId: String? = null): Result<List<OrderHistory>> {
         return try {
             val query = if (userId != null) {
@@ -41,6 +40,27 @@ class OrdersRepository {
                 .orderBy("orderDate", Query.Direction.DESCENDING)
                 .get()
                 .await()
+
+            val orders = snapshot.documents.mapNotNull { document ->
+                document.toObject(OrderHistory::class.java)?.copy(
+                    orderId = document.id
+                )
+            }
+
+            Result.success(orders)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // For staff
+    suspend fun getAllCurrentOrders(): Result<List<OrderHistory>> {
+        return try {
+            val query = db.collection("orders")
+                .whereIn("orderStatus", listOf("pending", "preparing", "ready", "delivering"))
+                .orderBy("orderDate", Query.Direction.DESCENDING)
+
+            val snapshot = query.get().await()
 
             val orders = snapshot.documents.mapNotNull { document ->
                 document.toObject(OrderHistory::class.java)?.copy(
@@ -140,7 +160,6 @@ class OrdersRepository {
         orderType: String,
         paymentMethod: String,
         deliveryAddress: String? = null,
-        tableNumber: String? = null,
         specialInstructions: String = ""
     ): Result<String> {
         return try {
@@ -158,7 +177,6 @@ class OrdersRepository {
 
             val totalAmount = cartItems.sumOf { it.totalPrice }
             val estimatedTime = when (orderType) {
-                "dine_in" -> 15
                 "pick_up" -> 10
                 "delivery" -> 30
                 else -> 15
@@ -178,7 +196,6 @@ class OrdersRepository {
                 specialInstructions = specialInstructions,
                 paymentMethod = paymentMethod,
                 deliveryAddress = deliveryAddress,
-                tableNumber = tableNumber
             )
 
             Log.d("OrdersRepository", "Placing order with payment method: $paymentMethod")
@@ -196,6 +213,60 @@ class OrdersRepository {
 
         } catch (e: Exception) {
             Log.e("OrdersRepository", "Error placing order: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createDineInBooking(
+        customerId: String,
+        customerName: String,
+        customerPhone: String,
+        tableNumber: String,
+        specialInstructions: String = "",
+        paymentMethod: String = PAYMENT_METHOD_WALLET
+    ): Result<String> {
+        return try {
+            val currentUser = auth.currentUser
+
+            // Create a proper booking item
+            val bookingItem = OrderItem(
+                id = "table_booking_$tableNumber",
+                name = "Table Booking - Table $tableNumber",
+                quantity = 1,
+                price = 0.0,
+            )
+
+            // Create order object for booking with CORRECT fields
+            val orderHistory = OrderHistory(
+                orderId = "",
+                customerId = customerId,
+                customerName = customerName,
+                customerPhone = customerPhone,
+                orderItems = listOf(bookingItem), // This should show the table booking
+                totalAmount = 0.0,
+                orderType = "dine_in",
+                orderStatus = "pending",
+                orderDate = System.currentTimeMillis(),
+                estimatedTime = 15,
+                specialInstructions = "Table $tableNumber - $specialInstructions",
+                paymentMethod = paymentMethod,
+                tableNumber = tableNumber,
+                deliveryAddress = null
+            )
+
+            Log.d("OrdersRepository", "Creating dine-in booking for table: $tableNumber")
+
+            // Use the same logic as regular orders
+            if (paymentMethod.equals(PAYMENT_METHOD_WALLET, ignoreCase = true)) {
+                processWalletPayment(currentUser, customerId, 0.0, orderHistory)
+            } else {
+                val documentRef = ordersCollection.add(orderHistory).await()
+                Log.d("OrdersRepository", "Booking created successfully. Order ID: ${documentRef.id}")
+                Result.success(documentRef.id)
+            }
+
+        } catch (e: Exception) {
+            Log.e("OrdersRepository", "Error creating booking: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -246,13 +317,12 @@ class OrdersRepository {
 
 
     // Real-time listener for staff orders
-    fun observeCurrentOrders(onOrdersChanged: (List<OrderHistory>) -> Unit) {
+    fun observeCurrentOrders(onUpdate: (List<OrderHistory>) -> Unit) {
         db.collection("orders")
             .whereIn("orderStatus", listOf("pending", "preparing", "ready", "delivering"))
-            .orderBy("orderDate", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    onOrdersChanged(emptyList())
+                    // Handle error
                     return@addSnapshotListener
                 }
 
@@ -262,7 +332,7 @@ class OrdersRepository {
                     )
                 } ?: emptyList()
 
-                onOrdersChanged(orders)
+                onUpdate(orders)
             }
     }
 }

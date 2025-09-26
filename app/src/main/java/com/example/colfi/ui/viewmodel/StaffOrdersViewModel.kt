@@ -52,11 +52,11 @@ class StaffOrdersViewModel(
 
         viewModelScope.launch {
             val result = when (_selectedTab.value) {
-                "all" -> ordersRepository.getCurrentOrders()
+                "all" -> ordersRepository.getAllCurrentOrders()
                 "dine_in" -> ordersRepository.getOrdersByType("dine_in")
                 "pick_up" -> ordersRepository.getOrdersByType("pick_up")
                 "delivery" -> ordersRepository.getOrdersByType("delivery")
-                else -> ordersRepository.getCurrentOrders()
+                else -> ordersRepository.getAllCurrentOrders()
             }
 
             result.onSuccess { orders ->

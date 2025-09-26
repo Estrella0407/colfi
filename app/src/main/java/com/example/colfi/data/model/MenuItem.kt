@@ -11,9 +11,6 @@ data class MenuItem(
     val category: String = "",
     val imageName: String = "",
     val availability: Boolean = true,
-    val quantity: Int = 0,
-    val minQuantity: Int = 0,
-    val maxQuantity: Int = 100
 ) {
     val imageResId: Int
         get() = DrawableMapper.getDrawableForImageName(imageName)

@@ -3,12 +3,17 @@ package com.example.colfi.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.colfi.data.model.MenuItem
 import com.example.colfi.data.repository.MenuRepository
 import com.example.colfi.ui.state.MenuUiState
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlin.text.lowercase
 
 class MenuViewModel(
     private val menuRepository: MenuRepository = MenuRepository()
@@ -16,6 +21,7 @@ class MenuViewModel(
 
     private val _uiState = MutableStateFlow(MenuUiState())
     val uiState: StateFlow<MenuUiState> = _uiState.asStateFlow()
+    private val db = Firebase.firestore
 
     init {
         initialize()

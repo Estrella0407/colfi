@@ -67,7 +67,6 @@ class StaffProfileViewModel(
         displayName: String,
         position: String,
         specialty: String?,
-        staffId: String?
     ) {
         val currentStaff = _staff.value ?: return
 
@@ -75,11 +74,15 @@ class StaffProfileViewModel(
             _isLoading.value = true
             _errorMessage.value = null
 
+            val userId = authRepository.getCurrentUserId()
+                ?: throw Exception("User not authenticated")
+
+
             val updatedStaff = currentStaff.copy(
                 displayName = displayName,
                 position = position,
                 specialty = specialty,
-                staffId = staffId
+                staffId = userId
             )
 
             val result = authRepository.updateStaffProfile(updatedStaff)

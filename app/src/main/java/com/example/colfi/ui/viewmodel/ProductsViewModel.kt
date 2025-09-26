@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.example.colfi.ui.state.ProductsUiState
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.tasks.await
 
 class ProductsViewModel(
     private val menuRepository: MenuRepository = MenuRepository()
@@ -106,73 +109,12 @@ class ProductsViewModel(
 
     fun loadLowStockItems() {
         viewModelScope.launch {
-            menuRepository.getLowStockItems().fold(
+            menuRepository.getUnavailableItems().fold(
                 onSuccess = { items ->
                     _uiState.value = _uiState.value.copy(lowStockItems = items)
                 },
                 onFailure = {
                     // Handle silently or log error
-                }
-            )
-        }
-    }
-
-    fun updateItemAvailability() {
-        val showLowStock = !_uiState.value.showLowStockOnly
-        _uiState.value = _uiState.value.copy(
-            showLowStockOnly = showLowStock,
-            filteredItems = if (showLowStock) {
-                _uiState.value.lowStockItems
-            } else {
-                filterItemsByCategory(_uiState.value.selectedCategory, _uiState.value.products)
-            }
-        )
-    }
-
-    fun updateItemQuantity(item: MenuItem, newQuantity: Int) {
-        viewModelScope.launch {
-            menuRepository.updateItemQuantity(item.category, item.id, newQuantity).fold(
-                onSuccess = {
-                    // Update the specific item in the current list
-                    refreshItemInList(item.id, item.category)
-                    loadLowStockItems()
-                },
-                onFailure = { exception ->
-                    _uiState.value = _uiState.value.copy(
-                        errorMessage = exception.message ?: "Failed to update quantity"
-                    )
-                }
-            )
-        }
-    }
-
-    fun increaseItemQuantity(item: MenuItem, amount: Int = 1) {
-        viewModelScope.launch {
-            menuRepository.increaseItemQuantity(item.category, item.id, amount).fold(
-                onSuccess = {
-                    refreshItemInList(item.id, item.category)
-                    loadLowStockItems()
-                },
-                onFailure = { exception ->
-                    _uiState.value = _uiState.value.copy(
-                        errorMessage = exception.message ?: "Failed to increase quantity"
-                    )
-                }
-            )
-        }
-    }
-
-    fun decreaseItemQuantity(item: MenuItem, amount: Int = 1) {
-        viewModelScope.launch {
-            menuRepository.decreaseItemQuantity(item.category, item.id, amount).fold(
-                onSuccess = {
-                    refreshItemInList(item.id, item.category)
-                    loadLowStockItems()
-                },
-                onFailure = { exception ->
-                    _uiState.value = _uiState.value.copy(
-                        errorMessage = exception.message ?: "Failed to decrease quantity"
-                    )
                 }
             )
         }
@@ -216,6 +158,16 @@ class ProductsViewModel(
         }
     }
 
+    private fun filterItems() {
+        _uiState.value = _uiState.value.copy(
+            filteredItems = if (_uiState.value.showLowStockOnly) {
+                _uiState.value.lowStockItems
+            } else {
+                filterItemsByCategory(_uiState.value.selectedCategory, _uiState.value.products)
+            }
+        )
+    }
+
     private fun getCategoryKey(displayName: String): String {
         return when (displayName) {
             "Coffee" -> "coffee"
@@ -224,5 +176,47 @@ class ProductsViewModel(
             "Add On" -> "add-on"
             else -> displayName.lowercase()
         }
+    }
+
+    fun updateItemAvailability() {
+        val showLowStock = !_uiState.value.showLowStockOnly
+        _uiState.value = _uiState.value.copy(
+            showLowStockOnly = showLowStock
+        )
+        filterItems() // Use the centralized filter function
+    }
+
+    fun toggleProductAvailability(menuItem: MenuItem) {
+        viewModelScope.launch {
+            // Update availability in repository
+            val updatedItem = menuItem.copy(availability = !menuItem.availability)
+            menuRepository.updateMenuItem(updatedItem).fold(
+                onSuccess = {
+                    // Update local state immediately for better UX
+                    val currentItems = _uiState.value.products.toMutableList()
+                    val index = currentItems.indexOfFirst { it.id == menuItem.id }
+                    if (index >= 0) {
+                        currentItems[index] = updatedItem
+                        _uiState.value = _uiState.value.copy(
+                            products = currentItems,
+                            filteredItems = filterItemsByCategory(_uiState.value.selectedCategory, currentItems)
+                        )
+                    }
+                    loadLowStockItems() // Refresh low stock items
+                },
+                onFailure = { exception ->
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = exception.message ?: "Failed to update availability"
+                    )
+                }
+            )
+        }
+    }
+
+    fun toggleLowStockFilter() {
+        _uiState.value = _uiState.value.copy(
+            showLowStockOnly = !_uiState.value.showLowStockOnly
+        )
+        filterItems()
     }
 }

@@ -121,7 +121,6 @@ fun DineInScreen(
                 }
             }
         }
-
         // Confirm booking dialog
         if (showConfirmDialog && selectedTableId != null) {
             AlertDialog(
@@ -130,7 +129,7 @@ fun DineInScreen(
                 text = { Text("Do you want to book Table ${selectedTableId}?") },
                 confirmButton = {
                     TextButton(onClick = {
-                        viewModel.updateTableStatus(selectedTableId!!, false) // mark as booked
+                        viewModel.createDineInOrder(selectedTableId!!)
                         showConfirmDialog = false
                     }) {
                         Text("Confirm")

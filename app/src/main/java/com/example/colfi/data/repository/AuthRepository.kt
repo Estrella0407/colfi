@@ -241,7 +241,6 @@ class AuthRepository(private val context: Context? = null) {
         displayName: String,
         position: String,
         specialty: String? = null,
-        staffId: String? = null
     ): Result<String> {
         return try {
             val existingUser = usersCollection
@@ -256,6 +255,7 @@ class AuthRepository(private val context: Context? = null) {
 
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
             val firebaseUser = authResult.user ?: throw Exception("User creation failed")
+            val staffId = getCurrentUserId()
 
             val staffData = hashMapOf(
                 "username" to username,
@@ -386,7 +386,7 @@ class AuthRepository(private val context: Context? = null) {
                     "role" to "staff",
                     "position" to staff.position,
                     "specialty" to (staff.specialty ?: ""),
-                    "staffId" to (staff.staffId ?: ""),
+                    "staffId" to (staff.staffId),
                     "staffSince" to staff.staffSince,
                 )
 
@@ -406,6 +406,22 @@ class AuthRepository(private val context: Context? = null) {
             "" // Empty string for guest users
         } else {
             auth.currentUser?.uid ?: "" // Firebase UID for authenticated users
+        }
+    }
+
+    suspend fun getCurrentUserName(): String {
+        return if (isGuestUser()) {
+            "" // Empty string for guest users
+        } else {
+            usersCollection.document(getCurrentUserId()).get().await().getString("displayName") ?: ""
+        }
+    }
+
+    suspend fun getCurrentUserPhone(): String {
+        return if (isGuestUser()) {
+            "" // Empty string for guest users
+        } else {
+            usersCollection.document(getCurrentUserId()).get().await().getString("phone") ?: ""
         }
     }
 

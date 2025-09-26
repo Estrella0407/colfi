@@ -301,7 +301,7 @@ fun DeliveryScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // ✅ Order Now button stays visible
+            // Order Now button stays visible
             Button(
                 onClick = {
                     checkoutViewModel.placeOrder(
@@ -332,7 +332,7 @@ fun DeliveryScreen(
                 )
             }
 
-            // ✅ dialogs + popups remain same
+            // dialogs + popups remain same
             if (showSuccessDialog) {
                 LaunchedEffect(Unit) { delay(3000); showSuccessDialog = false }
 

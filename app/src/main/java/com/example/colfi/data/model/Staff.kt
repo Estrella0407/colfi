@@ -8,9 +8,9 @@ data class Staff(
     override val role: String = "staff",
     val position: String = "",
     val specialty: String? = null,
-    val staffId: String? = null,
+    val staffId: String = "",
     val staffSince: String = "",
 ) : User {
     // No-arg constructor for Firebase
-    constructor() : this("", "", "", "staff", "", null, null, "")
+    constructor() : this("", "", "", "staff", "", null, "", "")
 }
